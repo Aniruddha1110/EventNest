@@ -87,16 +87,17 @@ export default function OrganiserDashboard() {
           EventSphere
         </button>
 
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => navigate("/profile")}
             className="flex items-center gap-2 text-sm font-semibold transition hover:text-gray-600"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300">
+            <div className="flex h-9 w-20 items-center justify-center rounded-full border border-gray-300">
               <User size={18} />
             </div>
-            View Profile
           </button>
+            View Profile
+          
 
           <div className="relative group">
             <select

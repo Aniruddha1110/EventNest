@@ -14,7 +14,7 @@ function App() {
         <Route path="/organiser" element={<OrganiserPage />} />
 
         {/* Admin dashboard page */}
-        {/* <Route path="/admin" element={<AdminDashboard />} /> */}
+        <Route path="/admin" element={<AdminDashboard />} /> 
       </Routes>
     </>
 

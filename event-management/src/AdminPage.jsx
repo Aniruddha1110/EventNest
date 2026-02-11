@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 
 /**
- * AdminDashboard Component
+ * AdminPage Component
  * Designed to match the EventSphere Admin UI.
  * Integrates with SpringBoot/Django backend for dynamic profile data.
  */
-export default function AdminDashboard() {
+export default function AdminPage() {
   // --- State Management ---
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);

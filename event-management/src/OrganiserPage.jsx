@@ -13,8 +13,15 @@ import {
 import { User, ChevronLeft, ChevronRight } from "lucide-react";
 
 const API_BASE = "http://localhost:5000"; 
+// Mock Data - Representing what you'd get from a Backend
+const EVENT_DATA = [
+  { id: 1, title: "Tech Innovators Conference", type: "Paid, Technology", date: "2024-05-18", status: "ongoing" },
+  { id: 2, title: "Global Culture Fest - Day 1", type: "Free, Cultural", date: "2024-05-18", status: "ongoing" },
+  { id: 3, title: "Summer Music Jam", type: "Paid, Cultural", date: "2024-05-20", status: "upcoming" },
+  { id: 4, title: "Sci-Fi VR Experience", type: "Free, Abstract", date: "2024-05-22", status: "upcoming" },
+];
 
-export default function OrganiserDashboard() {
+export default function OrganiserPage() {
   const navigate = useNavigate();
 
   // --- State Management ---
@@ -23,6 +30,7 @@ export default function OrganiserDashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [eventsByDate, setEventsByDate] = useState([]);
   const [loadingDateEvents, setLoadingDateEvents] = useState(false);
+  
 
   // --- Data Fetching ---
   useEffect(() => {
@@ -55,6 +63,14 @@ export default function OrganiserDashboard() {
     const interval = setInterval(fetchEventsForDate, 15000); // 15s Real-time sync
     return () => clearInterval(interval);
   }, [selectedDate]);
+
+  //Filtered Evenets based on selected calendar
+  const filteredEvents = useMemo(() => {
+      return EVENT_DATA.filter(event => event.date === selectedDate);
+    }, [selectedDate]);
+  
+    const ongoing = filteredEvents.filter(e => e.status === 'ongoing');
+    const upcoming = filteredEvents.filter(e => e.status === 'upcoming');
 
   // --- Calendar Logic ---
   const calendarDays = useMemo(() => {
@@ -120,7 +136,7 @@ export default function OrganiserDashboard() {
         Welcome Organisers
       </h1>
 
-      <div className="mt-16 grid grid-cols-1 gap-16 lg:grid-cols-[1.2fr_0.8fr]">
+      <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-12 mt-12 items-start">
         
         {/* Left Section: Ongoing Events */}
         <section>
@@ -160,69 +176,64 @@ export default function OrganiserDashboard() {
         </section>
 
         {/* Right Section: Calendar */}
-        <section className="relative flex flex-col items-center lg:items-end">
-          <div className="w-full max-w-sm bg-white p-6 shadow-[0_10px_40px_rgba(0,0,0,0.04)] ring-1 ring-gray-50">
-            
-            {/* Calendar Nav */}
-            <div className="mb-6 flex items-center justify-between px-2">
-              <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
-                <ChevronLeft size={20} className="text-gray-300 hover:text-black" />
-              </button>
-              <h3 className="text-lg font-bold">{format(currentMonth, "MMMM yyyy")}</h3>
-              <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
-                <ChevronRight size={20} className="text-gray-300 hover:text-black" />
-              </button>
-            </div>
 
-            {/* Weekdays */}
-            <div className="mb-4 grid grid-cols-7 text-center text-xs font-semibold text-gray-400">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-                <div key={d}>{d}</div>
-              ))}
-            </div>
+        <div className="self-start -mt-12 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
 
-            {/* Days Grid */}
-            <div className="grid grid-cols-7 gap-y-1 text-center">
-              {calendarDays.map((day, idx) => {
-                const isSelected = day && isSameDay(day, selectedDate);
-                const isToday = day && isSameDay(day, new Date());
-                
-                return (
-                  <button
-                    key={idx}
-                    disabled={!day}
-                    onClick={() => day && setSelectedDate(day)}
-                    className={`h-10 text-sm transition-all duration-200 
-                      ${!day ? "pointer-events-none" : "hover:bg-gray-50"} 
-                      ${isSelected ? "font-bold text-[#CCF05A]" : "text-gray-700"}
-                      ${isToday && !isSelected ? "underline decoration-[#CCF05A] underline-offset-4" : ""}
-                    `}
-                  >
-                    {day ? format(day, "d") : ""}
-                  </button>
-                );
-              })}
-            </div>
+      {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+            <ChevronLeft />
+          </button>
 
-            {/* Upcoming Popover (Floating UI) */}
-            <div className="absolute -bottom-12 -right-4 min-w-[200px] border border-gray-50 bg-white p-5 shadow-2xl">
-              <p className="mb-3 text-xs font-bold text-gray-800">
-                {eventsByDate.length} upcoming events
-              </p>
-              <button
-                onClick={() => navigate("/events")}
-                className="w-full bg-[#CCF05A] py-2 text-[11px] font-black uppercase tracking-widest text-black transition hover:brightness-105"
-              >
-                View Events
-              </button>
-            </div>
-          </div>
-          
-          <p className="mt-20 self-end text-[10px] text-gray-300">
-            *Real-time database sync active
-          </p>
-        </section>
+          <h3 className="font-bold text-lg">
+            {format(currentMonth, "MMMM yyyy")}
+          </h3>
+
+          <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+            <ChevronRight />
+          </button>
+        </div>
+
+      {/* Weekdays */}
+        <div className="grid grid-cols-7 gap-2 text-center text-sm mb-2 text-gray-400">
+          {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => (
+        <div key={d}>{d}</div>
+      ))}
+        </div>
+
+      {/* Days */}
+      <div className="grid grid-cols-7 gap-2 text-center">
+          {calendarDays.map((day, idx) => {
+            if (!day) return <div key={idx}></div>;
+
+            const isSelected = isSameDay(day, selectedDate);
+
+        return (
+          <button
+            key={idx}
+            onClick={() => setSelectedDate(day)}
+            className={`p-2 rounded-full transition ${
+              isSelected
+                ? "ring-2 ring-lime-400 font-bold"
+                : "hover:bg-gray-100"
+           }`}
+        >
+          {format(day, "d")}
+        </button>
+      );
+    })}
       </div>
+
+        <div className="mt-8 pt-6 border-t">
+          <p className="text-sm text-gray-500 mb-2">
+            {eventsByDate.length} events found
+          </p>
+          <button className="w-full bg-lime-400 py-2 rounded font-bold hover:bg-lime-500 transition">
+            View Events
+          </button>
+        </div>
+        </div>
+      </main>
     </div>
   );
 }

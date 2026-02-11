@@ -67,7 +67,7 @@ const UserPage = () => {
         
         {/* LEFT COLUMN: EVENTS */}
         <div className="lg:col-span-2">
-          <h1 className="text-5xl font-bold mb-10">Your Events Dashboard</h1>
+          <h1 className="text-6xl font-bold mb-10">Your Events Dashboard</h1>
           
           <section className="mb-10">
             <h2 className="text-xl font-semibold mb-4 border-b-2 border-lime-400 w-fit pb-1">Ongoing Events</h2>

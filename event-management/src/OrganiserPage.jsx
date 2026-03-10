@@ -103,12 +103,12 @@ export default function OrganiserPage() {
           EventSphere
         </button>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           <button
-            onClick={() => navigate("/profile")}
-            className="flex items-center gap-2 text-sm font-semibold transition hover:text-gray-600"
+            onClick={() => navigate("/organiserprofile")}
+            className="flex items-center gap-2 hover:text-lime-600 transition"
           >
-            <div className="flex h-9 w-20 items-center justify-center rounded-full border border-gray-300">
+            <div className="flex h-9 w-10 items-center justify-center rounded-full border border-gray-300">
               <User size={18} />
             </div>
           </button>

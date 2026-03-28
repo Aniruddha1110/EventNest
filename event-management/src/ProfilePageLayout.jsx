@@ -23,7 +23,6 @@ const ProfilePageLayout = ({ user, sidebarRoleContent, children }) => {
     }
   };
 
-  // FIXED: Changed False to false, and renamed to isModalOpen
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalStep, setModalStep] = useState(1);
   const [phone, setPhone] = useState("");
@@ -32,7 +31,6 @@ const ProfilePageLayout = ({ user, sidebarRoleContent, children }) => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // FIXED: Capitalized OTP to match the button
   const handleVerifyOTP = () => {
     if (otp === "1234") {
       setErrorMessage("");
@@ -44,13 +42,11 @@ const ProfilePageLayout = ({ user, sidebarRoleContent, children }) => {
 
   const handleSaveNewPassword = () => {
     if (newPassword.length < 6) {
-      // FIXED: Changed errorMessage to setErrorMessage
       setErrorMessage("Password strength must be greater than 6 characters!");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      // FIXED: Changed errorMessage to setErrorMessage
       setErrorMessage("Passwords do not match!");
       return;
     }
@@ -61,16 +57,19 @@ const ProfilePageLayout = ({ user, sidebarRoleContent, children }) => {
     setNewPassword("");
     setConfirmPassword("");
     setModalStep(1);
-    // FIXED: Changed False to false
+
     setIsModalOpen(false);
   };
 
   return (
     <div className="min-h-screen bg-[#F9F9F9] font-sans text-gray-900 selection:bg-lime-200 relative">
-      <nav className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
-        <div className="bg-black text-white text-sm font-bold px-3 py-1.5 tracking-wide cursor-pointer hover:opacity-90">
-          EventSphere
-        </div>
+      <nav className="flex justify-between items-center mb-12">
+        <button onClick={() => navigate("/")}>
+          <div className="font-bold text-xl tracking-tight">
+            Event<span className="text-[#a3e635]">Sphere</span>
+          </div>
+        </button>
+
         <button>
           <div className="flex items-center gap-4 text-sm font-medium">
             <a href="#" onClick={handleBacktoDashboard}>
@@ -82,7 +81,6 @@ const ProfilePageLayout = ({ user, sidebarRoleContent, children }) => {
 
       <main className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="col-span-1 space-y-6">
-          {/* chnaged the border colot */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-lime-600">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-xl font-bold text-gray-500">
@@ -151,7 +149,6 @@ const ProfilePageLayout = ({ user, sidebarRoleContent, children }) => {
         <div className="col-span-1 lg:col-span-2">{children}</div>
       </main>
 
-      {/* MODAL SECTION */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl relative">

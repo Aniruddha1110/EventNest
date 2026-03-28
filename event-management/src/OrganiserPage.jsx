@@ -1,239 +1,341 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import {
-  addMonths,
-  format,
-  getDaysInMonth,
-  isSameDay,
-  isSameMonth,
-  startOfMonth,
-  subMonths,
-} from "date-fns";
-import { User, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ChevronLeft, ChevronRight, UserCircle, ChevronDown } from "lucide-react";
+import { ThemeToggle } from "./ThemeContext";
 
-const API_BASE = "http://localhost:5000"; 
-// Mock Data - Representing what you'd get from a Backend
+// ─── CALENDAR HELPERS ────────────────────────────────────────────────────────
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAYS   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// ─── MOCK EVENT DATA ─────────────────────────────────────────────────────────
 const EVENT_DATA = [
-  { id: 1, title: "Tech Innovators Conference", type: "Paid, Technology", date: "2024-05-18", status: "ongoing" },
-  { id: 2, title: "Global Culture Fest - Day 1", type: "Free, Cultural", date: "2024-05-18", status: "ongoing" },
-  { id: 3, title: "Summer Music Jam", type: "Paid, Cultural", date: "2024-05-20", status: "upcoming" },
-  { id: 4, title: "Sci-Fi VR Experience", type: "Free, Abstract", date: "2024-05-22", status: "upcoming" },
+  { id: 1, title: "TechConf 2026",      category: "Technology", type: "Paid", date: "2026-03-27", status: "ongoing",  venue: "NSCI Dome, Mumbai",    capacity: 320, attendees: 249 },
+  { id: 2, title: "Indie Music Night",  category: "Music",      type: "Paid", date: "2026-04-12", status: "upcoming", venue: "Bandra Fort Grounds",  capacity: 500, attendees: 321 },
+  { id: 3, title: "AI & Future Summit", category: "Technology", type: "Paid", date: "2026-04-05", status: "upcoming", venue: "JW Marriott, BKC",     capacity: 200, attendees: 0   },
 ];
 
-export default function OrganiserPage() {
+const CATEGORY_COLORS = {
+  Technology: "text-[#818cf8] bg-[#818cf8]/10 border-[#818cf8]/20",
+  Music:      "text-[#f472b6] bg-[#f472b6]/10 border-[#f472b6]/20",
+  Business:   "text-[#fb923c] bg-[#fb923c]/10 border-[#fb923c]/20",
+  Abstract:   "text-[#34d399] bg-[#34d399]/10 border-[#34d399]/20",
+};
+
+// ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
+const OrganiserPage = () => {
+  const todayStr = getTodayStr();
   const navigate = useNavigate();
 
-  // --- State Management ---
-  const [ongoingEvents, setOngoingEvents] = useState([]);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [eventsByDate, setEventsByDate] = useState([]);
-  const [loadingDateEvents, setLoadingDateEvents] = useState(false);
-  
+  const [currentDate, setCurrentDate]   = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(todayStr);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showCreate, setShowCreate]     = useState(false);
 
-  // --- Data Fetching ---
-  useEffect(() => {
-    const fetchLatestOngoing = async () => {
-      try {
-        const res = await axios.get(`${API_BASE}/api/events/ongoing?limit=5`);
-        setOngoingEvents(res.data || []);
-      } catch (err) {
-        console.error("Failed to fetch ongoing events:", err);
-      }
-    };
-    fetchLatestOngoing();
-  }, []);
+  const year        = currentDate.getFullYear();
+  const month       = currentDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay    = new Date(year, month, 1).getDay();
 
-  useEffect(() => {
-    const fetchEventsForDate = async () => {
-      try {
-        setLoadingDateEvents(true);
-        const formatted = format(selectedDate, "yyyy-MM-dd");
-        const res = await axios.get(`${API_BASE}/api/events/by-date?date=${formatted}`);
-        setEventsByDate(res.data || []);
-      } catch (err) {
-        console.error("Failed to fetch date events:", err);
-      } finally {
-        setLoadingDateEvents(false);
-      }
-    };
+  const fmtDay = (day) =>
+    `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
-    fetchEventsForDate();
-    const interval = setInterval(fetchEventsForDate, 15000); // 15s Real-time sync
-    return () => clearInterval(interval);
-  }, [selectedDate]);
+  const eventDateSet = useMemo(() => new Set(EVENT_DATA.map((e) => e.date)), []);
 
-  //Filtered Evenets based on selected calendar
-  const filteredEvents = useMemo(() => {
-      return EVENT_DATA.filter(event => event.date === selectedDate);
-    }, [selectedDate]);
-  
-    const ongoing = filteredEvents.filter(e => e.status === 'ongoing');
-    const upcoming = filteredEvents.filter(e => e.status === 'upcoming');
+  const filteredEvents = useMemo(
+    () => EVENT_DATA.filter((e) => e.date === selectedDate),
+    [selectedDate]
+  );
 
-  // --- Calendar Logic ---
-  const calendarDays = useMemo(() => {
-    const start = startOfMonth(currentMonth);
-    const daysInMonth = getDaysInMonth(currentMonth);
-    const startWeekday = start.getDay();
-    const totalCells = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
-
-    const days = [];
-    for (let i = 0; i < totalCells; i++) {
-      const dayNumber = i - startWeekday + 1;
-      if (dayNumber < 1 || dayNumber > daysInMonth) {
-        days.push(null);
-      } else {
-        days.push(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), dayNumber));
-      }
-    }
-    return days;
-  }, [currentMonth]);
+  const ongoing  = filteredEvents.filter((e) => e.status === "ongoing");
+  const upcoming = filteredEvents.filter((e) => e.status === "upcoming");
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] px-10 py-8 font-sans text-gray-900">
-      
-      {/* Header Section */}
-      <header className="flex justify-between items-center mb-12">
-        <button
-          onClick={() => navigate("/")}
-          className="font-bold text-xl tracking-tight"
-        >
-          Event<span className="text-[#a3e635]">Sphere</span>
+    <div className="min-h-screen bg-[#0c0c0f] text-white font-sans">
+
+      {/* ── HEADER ──────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 flex justify-between items-center px-12 h-16 bg-[#0c0c0f]/90 backdrop-blur-md border-b border-[#1e1e22]">
+
+        <button onClick={() => navigate("/")}>
+          <span className="font-bold text-xl tracking-tight">
+            Event<span className="text-[#a3e635]">Sphere</span>
+          </span>
         </button>
 
-        <div className="flex items-center gap-6">
-          <button
-            onClick={() => navigate("/organiserprofile")}
-            className="flex items-center gap-2 hover:text-lime-600 transition"
-          >
-            <div className="flex h-9 w-10 items-center justify-center rounded-full border border-gray-300">
-              <User size={18} />
-            </div>
-          </button>
-            View Profile
-          
+        <div className="flex items-center gap-5">
+          <ThemeToggle />
 
-          <div className="relative group">
-            <select
-              onChange={(e) => navigate(`/events/${e.target.value}`)}
-              className="appearance-none rounded-md border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-gray-300"
+          {/* View Profile */}
+          <Link
+            to="/organiserprofile"
+            className="flex items-center gap-2 text-[#a0a0ab] hover:text-[#a3e635] transition-colors no-underline"
+          >
+            <UserCircle size={20} />
+            <span className="text-sm font-medium">View Profile</span>
+          </Link>
+
+          {/* Create Event button */}
+          <button
+            onClick={() => setShowCreate(true)}
+            className="bg-[#a3e635] text-[#0c0c0f] font-bold text-sm px-4 py-2 rounded-xl hover:bg-[#b8f056] transition-all"
+          >
+            + Create New Event
+          </button>
+
+          {/* Events dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center gap-2 bg-[#111115] border border-[#1e1e22] rounded-xl px-4 py-2 text-sm text-[#a0a0ab] hover:border-[#a3e635] hover:text-white transition-all"
             >
-              <option value="">Events</option>
-              <option value="ongoing">Ongoing Events</option>
-              <option value="upcoming">Upcoming Events</option>
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
-              <span className="text-[10px]">▼</span>
-            </div>
+              Events <ChevronDown size={14} />
+            </button>
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-[#131317] border border-[#1e1e22] rounded-xl shadow-2xl z-10 overflow-hidden">
+                <button onClick={() => { setSelectedDate(todayStr); setIsDropdownOpen(false); }}
+                  className="w-full text-left px-4 py-3 text-sm text-[#a0a0ab] hover:bg-[#1e1e22] hover:text-[#a3e635] transition-colors">
+                  Ongoing Events
+                </button>
+                <button onClick={() => setIsDropdownOpen(false)}
+                  className="w-full text-left px-4 py-3 text-sm text-[#a0a0ab] hover:bg-[#1e1e22] hover:text-[#a3e635] transition-colors">
+                  Upcoming Events
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
-      {/* Main Title */}
-      <h1 className="mt-16 text-7xl font-bold tracking-tight text-black">
-        Welcome Organisers
-      </h1>
+      {/* ── MAIN ────────────────────────────────────────────────────── */}
+      <main className="max-w-6xl mx-auto px-12 py-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
 
-      <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-12 mt-12 items-start">
-        
-        {/* Left Section: Ongoing Events */}
-        <section>
-          <div className="relative mb-10 inline-block">
-            <h2 className="text-2xl font-bold">Ongoing Events (Latest 5)</h2>
-            <div className="absolute -bottom-1 left-0 h-[3px] w-full bg-[#CCF05A]" />
-          </div>
+        {/* ── LEFT: EVENT SECTIONS ──────────────────────────────────── */}
+        <div className="lg:col-span-2">
+          <h1 className="text-5xl font-extrabold mb-10 tracking-tight leading-tight">
+            Welcome <span className="text-[#a3e635]">Organisers</span>
+          </h1>
 
-          <div className="flex flex-col gap-4">
-            {ongoingEvents.length > 0 ? (
-              ongoingEvents.map((event) => (
-                <div
-                  key={event.id}
-                  onClick={() => navigate(`/events/${event.id}`)}
-                  className="group flex cursor-pointer items-center bg-white py-3 pr-6 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md"
-                >
-                  <div className="mr-4 h-10 w-2 bg-[#CCF05A]" />
-                  <span className="flex-1 text-xl font-medium group-hover:underline">
-                    {event.title}
-                  </span>
-                  <span className="text-sm italic text-gray-400">
-                    {event.statusText || "Active Now"}
-                  </span>
-                </div>
-              ))
+          {/* Ongoing Events */}
+          <section className="mb-10">
+            <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-white mb-5">
+              <span className="inline-block w-6 h-0.5 bg-[#a3e635] rounded-full" />
+              Ongoing Events (Latest 5)
+            </h2>
+
+            {ongoing.length > 0 ? (
+              <div className="space-y-3">
+                {ongoing.map((event) => (
+                  <EventCard key={event.id} event={event} isActive />
+                ))}
+              </div>
             ) : (
-              <p className="text-gray-400">No active events found.</p>
+              <div className="bg-[#111115] border border-[#1e1e22] rounded-2xl px-6 py-5">
+                <p className="text-[#3a3a42] text-sm italic">No active events found.</p>
+              </div>
             )}
-          </div>
+          </section>
 
+          {/* Upcoming Events */}
+          <section className="mb-10">
+            <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-white mb-5">
+              <span className="inline-block w-6 h-0.5 bg-[#a3e635] rounded-full" />
+              Upcoming Events
+            </h2>
+
+            {upcoming.length > 0 ? (
+              <div className="space-y-3">
+                {upcoming.map((event) => (
+                  <EventCard key={event.id} event={event} />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-[#111115] border border-[#1e1e22] rounded-2xl px-6 py-5">
+                <p className="text-[#3a3a42] text-sm italic">No upcoming events for this date.</p>
+              </div>
+            )}
+          </section>
+
+          {/* Create New Event CTA */}
           <button
-            onClick={() => navigate("/events/create")}
-            className="mt-10 flex items-center gap-2 bg-[#CCF05A] px-6 py-3 font-bold uppercase tracking-wide transition hover:brightness-105 active:scale-95 shadow-sm"
+            onClick={() => setShowCreate(true)}
+            className="bg-[#a3e635] text-[#0c0c0f] font-extrabold text-sm px-8 py-4 rounded-xl hover:bg-[#b8f056] transition-all"
           >
-            + Create New Event
-          </button>
-        </section>
-
-        {/* Right Section: Calendar */}
-
-        <div className="self-start -mt-12 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-
-      {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
-            <ChevronLeft />
-          </button>
-
-          <h3 className="font-bold text-lg">
-            {format(currentMonth, "MMMM yyyy")}
-          </h3>
-
-          <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
-            <ChevronRight />
+            + CREATE NEW EVENT
           </button>
         </div>
 
-      {/* Weekdays */}
-        <div className="grid grid-cols-7 gap-2 text-center text-sm mb-2 text-gray-400">
-          {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => (
-        <div key={d}>{d}</div>
-      ))}
-        </div>
+        {/* ── RIGHT: CALENDAR ───────────────────────────────────────── */}
+        <div className="self-start sticky top-24">
+          <div className="bg-[#131317] border border-[#1e1e22] rounded-2xl p-6 shadow-2xl">
 
-      {/* Days */}
-      <div className="grid grid-cols-7 gap-2 text-center">
-          {calendarDays.map((day, idx) => {
-            if (!day) return <div key={idx}></div>;
+            <div className="flex items-center justify-between mb-6">
+              <button
+                onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1e1e22] border border-[#2a2a2e] text-[#a0a0ab] hover:border-[#a3e635] hover:text-white transition-all"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="font-bold text-white text-base">{MONTHS[month]} {year}</span>
+              <button
+                onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1e1e22] border border-[#2a2a2e] text-[#a0a0ab] hover:border-[#a3e635] hover:text-white transition-all"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
 
-            const isSelected = isSameDay(day, selectedDate);
+            <div className="grid grid-cols-7 gap-1 text-center mb-2">
+              {DAYS.map((d) => (
+                <div key={d} className="text-[10px] font-semibold text-[#3a3a42] py-1">{d}</div>
+              ))}
+            </div>
 
-        return (
-          <button
-            key={idx}
-            onClick={() => setSelectedDate(day)}
-            className={`p-2 rounded-full transition ${
-              isSelected
-                ? "ring-2 ring-lime-400 font-bold"
-                : "hover:bg-gray-100"
-           }`}
-        >
-          {format(day, "d")}
-        </button>
-      );
-    })}
-      </div>
+            <div className="grid grid-cols-7 gap-1">
+              {Array(firstDay).fill(null).map((_, i) => <div key={`blank-${i}`} />)}
+              {Array.from({ length: daysInMonth }, (_, i) => {
+                const day        = i + 1;
+                const ds         = fmtDay(day);
+                const isSelected = ds === selectedDate;
+                const isToday    = ds === todayStr;
+                const hasEvent   = eventDateSet.has(ds);
+                return (
+                  <button key={day} onClick={() => setSelectedDate(ds)}
+                    className={`relative w-full aspect-square rounded-lg text-xs transition-all ${
+                      isSelected ? "bg-[#a3e635] text-[#0c0c0f] font-bold"
+                      : isToday  ? "bg-[#1a2c0a] text-[#a3e635] ring-1 ring-[#a3e635]/40"
+                      : "text-[#c0c0c8] hover:bg-[#1e1e22]"
+                    }`}>
+                    {day}
+                    {hasEvent && !isSelected && (
+                      <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#a3e635]" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
-        <div className="mt-8 pt-6 border-t">
-          <p className="text-sm text-gray-500 mb-2">
-            {eventsByDate.length} events found
-          </p>
-          <button className="w-full bg-lime-400 py-2 rounded font-bold hover:bg-lime-500 transition">
-            View Events
-          </button>
-        </div>
+            <div className="mt-6 pt-5 border-t border-[#1e1e22]">
+              <p className="text-xs text-[#5a5a62] mb-4">
+                <span className="text-white font-bold">{filteredEvents.length}</span>{" "}
+                event{filteredEvents.length !== 1 ? "s" : ""} found
+              </p>
+              <button className="w-full bg-[#a3e635] text-[#0c0c0f] py-2.5 rounded-xl font-bold text-sm hover:bg-[#b8f056] transition-all">
+                View Events
+              </button>
+            </div>
+          </div>
         </div>
       </main>
+
+      {/* ── CREATE EVENT MODAL ───────────────────────────────────────── */}
+      {showCreate && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+          onClick={() => setShowCreate(false)}>
+          <div className="bg-[#111115] border border-[#1e1e22] rounded-2xl p-8 w-full max-w-lg"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#a3e635] mb-1">New Event</p>
+                <h2 className="text-xl font-extrabold text-white">Create Event</h2>
+              </div>
+              <button onClick={() => setShowCreate(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1e1e22] text-[#6a6a72] hover:text-white transition-colors font-bold">
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {[
+                { label: "Event Title", placeholder: "e.g. TechConf 2026", type: "text" },
+                { label: "Venue",       placeholder: "e.g. NSCI Dome, Mumbai", type: "text" },
+                { label: "Date",        placeholder: "", type: "date" },
+                { label: "Time",        placeholder: "", type: "time" },
+              ].map(({ label, placeholder, type }) => (
+                <div key={label}>
+                  <label className="block text-xs font-semibold text-[#5a5a62] uppercase tracking-wider mb-2">{label}</label>
+                  <input type={type} placeholder={placeholder}
+                    className="w-full bg-[#0c0c0f] border border-[#1e1e22] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-[#a3e635] transition-colors" />
+                </div>
+              ))}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#5a5a62] uppercase tracking-wider mb-2">Capacity</label>
+                  <input type="number" placeholder="e.g. 300"
+                    className="w-full bg-[#0c0c0f] border border-[#1e1e22] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-[#a3e635] transition-colors" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#5a5a62] uppercase tracking-wider mb-2">Price</label>
+                  <input type="text" placeholder="e.g. ₹499 or Free"
+                    className="w-full bg-[#0c0c0f] border border-[#1e1e22] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-[#a3e635] transition-colors" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#5a5a62] uppercase tracking-wider mb-2">Description</label>
+                <textarea rows={3} placeholder="What's this event about?"
+                  className="w-full bg-[#0c0c0f] border border-[#1e1e22] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-[#a3e635] transition-colors resize-none" />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowCreate(false)}
+                className="flex-1 border border-[#2a2a2e] text-[#a0a0ab] font-semibold text-sm py-3 rounded-xl hover:border-[#a3e635] hover:text-[#a3e635] transition-all">
+                Cancel
+              </button>
+              <button className="flex-1 bg-[#a3e635] text-[#0c0c0f] font-bold text-sm py-3 rounded-xl hover:bg-[#b8f056] transition-all">
+                Submit for Review →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
+
+// ─── EVENT CARD ──────────────────────────────────────────────────────────────
+const EventCard = ({ event, isActive }) => {
+  const pct = event.capacity > 0 ? Math.round((event.attendees / event.capacity) * 100) : 0;
+  return (
+    <div className={`flex items-center justify-between bg-[#111115] px-6 py-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
+      isActive
+        ? "border-l-4 border-l-[#a3e635] border-t-[#1e1e22] border-r-[#1e1e22] border-b-[#1e1e22]"
+        : "border-[#1e1e22] border-l-4 border-l-[#2a2a2e] hover:border-[#a3e635]/20"
+    }`}>
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-2">
+          <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${CATEGORY_COLORS[event.category] || "text-[#a0a0ab] bg-[#1e1e22] border-[#2a2a2e]"}`}>
+            {event.category}
+          </span>
+          <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+            event.type === "Free" ? "text-[#34d399] bg-[#34d399]/10 border-[#34d399]/20" : "text-[#fb923c] bg-[#fb923c]/10 border-[#fb923c]/20"
+          }`}>
+            {event.type}
+          </span>
+        </div>
+        <h4 className="font-bold text-white text-base mb-1">{event.title}</h4>
+        <p className="text-sm text-[#5a5a62] mb-2">📍 {event.venue}</p>
+        {event.attendees > 0 && (
+          <div className="flex items-center gap-3">
+            <div className="w-32 h-1.5 bg-[#1e1e22] rounded-full overflow-hidden">
+              <div className={`h-full rounded-full ${pct >= 90 ? "bg-[#ef4444]" : pct >= 70 ? "bg-[#fb923c]" : "bg-[#a3e635]"}`}
+                style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-xs text-[#5a5a62]">{event.attendees}/{event.capacity} attendees</span>
+          </div>
+        )}
+      </div>
+      {isActive && (
+        <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#a3e635] uppercase tracking-wider flex-shrink-0 ml-4">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#a3e635] animate-pulse" />
+          Active Now
+        </span>
+      )}
+    </div>
+  );
+};
+
+export default OrganiserPage;

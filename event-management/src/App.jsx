@@ -8,10 +8,12 @@ import ProfilePageLayout from "./ProfilePageLayout";
 import TicketHistory from "./TicketHistory";
 import UserProfilePage from "./UserProfilePage";
 import OrganiserProfilePage from "./OrganiserProfilePage";
+import { ThemeProvider } from "./ThemeContext";
 
 function App() {
   return (
-    <>
+    <ThemeProvider>
+      
       <Routes>
         
         <Route path="/" element={<LandingPage />} />
@@ -23,7 +25,7 @@ function App() {
         <Route path="/userprofile" element={<UserProfilePage />} />
         <Route path="/organiserprofile" element={<OrganiserProfilePage />} />
       </Routes>
-    </>
+    </ThemeProvider>
 
     
   );

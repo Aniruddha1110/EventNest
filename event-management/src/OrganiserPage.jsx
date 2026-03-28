@@ -95,12 +95,12 @@ export default function OrganiserPage() {
     <div className="min-h-screen bg-[#FDFDFD] px-10 py-8 font-sans text-gray-900">
       
       {/* Header Section */}
-      <header className="flex items-center justify-between">
+      <header className="flex justify-between items-center mb-12">
         <button
           onClick={() => navigate("/")}
-          className="bg-black px-4 py-1 text-lg font-bold text-white transition hover:opacity-90"
+          className="font-bold text-xl tracking-tight"
         >
-          EventSphere
+          Event<span className="text-[#a3e635]">Sphere</span>
         </button>
 
         <div className="flex items-center gap-6">

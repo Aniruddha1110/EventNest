@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+
 import {
   ChevronLeft,
   ChevronRight,
@@ -81,9 +82,12 @@ const UserPage = () => {
     <div className="min-h-screen bg-gray-50 p-8 font-sans text-gray-800">
       {/* HEADER */}
       <header className="flex justify-between items-center mb-12">
-        <div className="bg-black text-white px-3 py-1 font-bold text-sm">
-          EventSphere
-        </div>
+        <button onClick={() => navigate("/")}>
+          <div className="font-bold text-xl tracking-tight">
+            Event<span className="text-[#a3e635]">Sphere</span>
+          </div>
+        </button>
+
         <div className="flex items-center gap-6">
           <Link
             to="/userprofile"

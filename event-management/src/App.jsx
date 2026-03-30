@@ -17,16 +17,24 @@ import PaymentPage          from "./PaymentPage";
 import TicketPage           from "./TicketPage";
 import RoleSelectPage from "./RoleSelect";
 import SignUpPage from "./SignupPage";
+import EventsPage from "./EventsPage";
+import OngoingEventsPage from "./OngoingEventsPage";
+import UpcomingEventsPage from "./UpcomingEventsPage";
+import CompletedEventsPage from "./CompletedEventsPage";
+import EventDetailPage from "./EventDetailPage";
+import PaymentPage from "./PaymentPage";
+import TicketPage from "./TicketPage";
+import RoleSelectPage from "./RoleSelect";
 
 function App() {
   return (
     <ThemeProvider>
-      
+
       <Routes>
-        
+
         <Route path="/" element={<LandingPage />} />
         <Route path="/organiser" element={<OrganiserPage />} />
-        <Route path="/admin" element={<AdminPage/>} />
+        <Route path="/admin" element={<AdminPage />} />
         <Route path="/user" element={<UserPage />} />
         {/* <Route path="/profile" element={<ProfilePageLayout />} /> */}
         <Route path="/profile/ticket" element={<TicketHistory />} />
@@ -41,10 +49,19 @@ function App() {
         <Route path="/profile/ticket"            element={<TicketHistory />} />
         <Route path="/roleselect"            element={<RoleSelectPage />} />
         <Route path="/signup"            element={<SignUpPage />} />
+        <Route path="/events" element={<EventsPage />} />
+        <Route path="/events/:eventId" element={<EventDetailPage />} />
+        <Route path="/events/ongoing" element={<OngoingEventsPage />} />
+        <Route path="/events/upcoming" element={<UpcomingEventsPage />} />
+        <Route path="/events/completed" element={<CompletedEventsPage />} />
+        <Route path="/events/:eventId/ticket" element={<TicketPage />} />
+        <Route path="/events/:eventId/payment" element={<PaymentPage />} />
+        <Route path="/profile/ticket" element={<TicketHistory />} />
+        <Route path="/select-role" element={<RoleSelectPage />} />
       </Routes>
     </ThemeProvider>
 
-    
+
   );
 }
 

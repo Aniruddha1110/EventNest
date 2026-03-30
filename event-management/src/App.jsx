@@ -15,6 +15,8 @@ import UpcomingEventsPage   from "./UpcomingEventsPage";
 import EventDetailPage      from "./EventDetailPage";
 import PaymentPage          from "./PaymentPage";
 import TicketPage           from "./TicketPage";
+import RoleSelectPage from "./RoleSelect";
+import SignUpPage from "./SignupPage";
 
 function App() {
   return (
@@ -37,6 +39,8 @@ function App() {
         <Route path="/events/:eventId/ticket"    element={<TicketPage />} />
         <Route path="/events/:eventId/payment"      element={<PaymentPage />} />
         <Route path="/profile/ticket"            element={<TicketHistory />} />
+        <Route path="/roleselect"            element={<RoleSelectPage />} />
+        <Route path="/signup"            element={<SignUpPage />} />
       </Routes>
     </ThemeProvider>
 

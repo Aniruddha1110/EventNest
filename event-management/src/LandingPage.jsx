@@ -410,7 +410,7 @@ export default function LandingPage() {
             Built for Everyone
           </p>
           <h2 className="text-4xl font-extrabold text-white tracking-tight mb-3">
-            Pick your role, start instantly
+            Pick a role, start now.
           </h2>
           <p className="text-[#5a5a62]">
             After signing up, you'll be directed to your personalised dashboard.
@@ -451,22 +451,22 @@ export default function LandingPage() {
                 "Email all attendees instantly",
               ],
             },
-            {
-              role: "Admin",
-              emoji: "🛡️",
-              tagColor: "text-[#34d399]",
-              borderClass: "border-[#1e1e22] hover:border-[#34d399]/40",
-              tagline: "Oversee & Control",
-              link: "/admin",
-              featured: false,
-              perks: [
-                "Review & approve events",
-                "Manage organisers & users",
-                "Full platform visibility",
-                "Venue & capacity management",
-                "Analytics & reporting",
-              ],
-            },
+            // {
+            //   role: "Admin",
+            //   emoji: "🛡️",
+            //   tagColor: "text-[#34d399]",
+            //   borderClass: "border-[#1e1e22] hover:border-[#34d399]/40",
+            //   tagline: "Oversee & Control",
+            //   link: "/admin",
+            //   featured: false,
+            //   perks: [
+            //     "Review & approve events",
+            //     "Manage organisers & users",
+            //     "Full platform visibility",
+            //     "Venue & capacity management",
+            //     "Analytics & reporting",
+            //   ],
+            // },
           ].map(
             ({
               role,

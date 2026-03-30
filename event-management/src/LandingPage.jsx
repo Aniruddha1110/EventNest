@@ -121,10 +121,10 @@ export default function LandingPage() {
             Roles
           </a>
         </nav>
-    
+
         {/* Auth buttons */}
         <div className="flex items-center gap-4">
-          <ThemeToggle/>
+          <ThemeToggle />
           <Link
             to="/login"
             className="text-sm text-[#a0a0ab] hover:text-white transition-colors"
@@ -152,14 +152,6 @@ export default function LandingPage() {
         >
           {/* Left — Headline & CTA */}
           <div>
-            {/* Live badge */}
-            <div className="inline-flex items-center gap-2 bg-[#a3e635]/10 border border-[#a3e635]/30 rounded-full px-4 py-1.5 mb-8">
-              <span className="w-2 h-2 rounded-full bg-[#a3e635] animate-pulse" />
-              <span className="text-xs font-semibold text-[#a3e635] tracking-widest uppercase">
-                Now Live — EventNest 2026
-              </span>
-            </div>
-
             {/* Heading */}
             <h1
               className="font-extrabold leading-none tracking-tighter text-white mb-6"
@@ -417,7 +409,7 @@ export default function LandingPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-2 gap-5  max-w-3xl mx-auto">
           {[
             {
               role: "User",
@@ -425,7 +417,7 @@ export default function LandingPage() {
               tagColor: "text-[#a3e635]",
               borderClass: "border-[#1e1e22] hover:border-[#a3e635]/40",
 
-              link: "/user",
+              link: "",
               featured: false,
               perks: [
                 "Browse ongoing & upcoming events",
@@ -441,7 +433,7 @@ export default function LandingPage() {
               tagColor: "text-[#818cf8]",
               borderClass: "border-[#818cf8]/40",
               tagline: "Create & Manage",
-              link: "/organiser",
+              link: "",
               featured: true,
               perks: [
                 "Submit events for approval",
@@ -512,10 +504,6 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-
-                <p className={`mt-7 text-sm font-bold ${tagColor}`}>
-                  Enter as {role} →
-                </p>
               </Link>
             ),
           )}

@@ -37,23 +37,23 @@ const ROLES = [
       "Email all attendees instantly",
     ],
   },
-  {
-    key: "admin",
-    emoji: "🛡️",
-    title: "Admin",
-    tagline: "Oversee & Control",
-    color: "text-[#34d399]",
-    borderHover: "hover:border-[#34d399]/60",
-    selectedBorder: "border-[#34d399]",
-    selectedBg: "bg-[#34d399]/5",
-    perks: [
-      "Review & approve events",
-      "Manage organisers & users",
-      "Full platform visibility",
-      "Venue & capacity management",
-      "Analytics & reporting",
-    ],
-  },
+  // {
+  //   key: "admin",
+  //   emoji: "🛡️",
+  //   title: "Admin",
+  //   tagline: "Oversee & Control",
+  //   color: "text-[#34d399]",
+  //   borderHover: "hover:border-[#34d399]/60",
+  //   selectedBorder: "border-[#34d399]",
+  //   selectedBg: "bg-[#34d399]/5",
+  //   perks: [
+  //     "Review & approve events",
+  //     "Manage organisers & users",
+  //     "Full platform visibility",
+  //     "Venue & capacity management",
+  //     "Analytics & reporting",
+  //   ],
+  // },
 ];
 
 export default function RoleSelectPage() {
@@ -99,7 +99,7 @@ export default function RoleSelectPage() {
         </div>
 
         {/* Role cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full max-w-4xl mb-10">
+        <div className="grid grid-cols-2   md:grid-cols-2 gap-5 w-full max-w-3xl mb-auto">
           {ROLES.map((role) => {
             const isSelected = selected === role.key;
             return (

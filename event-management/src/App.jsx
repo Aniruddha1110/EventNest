@@ -17,14 +17,11 @@ import PaymentPage from "./PaymentPage";
 import TicketPage from "./TicketPage";
 import RoleSelectPage from "./RoleSelect";
 import SignUpPage from "./SignupPage";
-import EventsPage from "./EventsPage";
-import OngoingEventsPage from "./OngoingEventsPage";
-import UpcomingEventsPage from "./UpcomingEventsPage";
 import CompletedEventsPage from "./CompletedEventsPage";
-import EventDetailPage from "./EventDetailPage";
-import PaymentPage from "./PaymentPage";
-import TicketPage from "./TicketPage";
-import RoleSelectPage from "./RoleSelect";
+
+
+
+
 
 function App() {
   return (

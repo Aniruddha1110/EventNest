@@ -1,61 +1,64 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
   UserCircle,
   ChevronDown,
+  Calendar,
 } from "lucide-react";
+import { MOCK_EVENTS, MOCK_USER } from "./mockData";
 import { ThemeToggle } from "./ThemeContext";
+import axios from "axios";
 
 // ─── MOCK DATA ───────────────────────────────────────────────────────────────
-const EVENT_DATA = [
-  {
-    id: 1,
-    title: "Tech Innovators Conference",
-    type: "Paid",
-    category: "Technology",
-    date: "2026-03-26",
-    status: "ongoing",
-    venue: "NSCI Dome, Mumbai",
-  },
-  {
-    id: 2,
-    title: "Global Culture Fest - Day 1",
-    type: "Free",
-    category: "Cultural",
-    date: "2026-03-26",
-    status: "ongoing",
-    venue: "Nehru Centre, Worli",
-  },
-  {
-    id: 3,
-    title: "Summer Music Jam",
-    type: "Paid",
-    category: "Music",
-    date: "2026-03-28",
-    status: "upcoming",
-    venue: "Bandra Fort Grounds",
-  },
-  {
-    id: 4,
-    title: "Sci-Fi VR Experience",
-    type: "Free",
-    category: "Abstract",
-    date: "2026-03-31",
-    status: "upcoming",
-    venue: "Phoenix Palladium",
-  },
-  {
-    id: 5,
-    title: "Startup Pitch Night",
-    type: "Free",
-    category: "Business",
-    date: "2026-04-05",
-    status: "upcoming",
-    venue: "WeWork BKC",
-  },
-];
+// const EVENT_DATA = [
+//   {
+//     id: 1,
+//     title: "Tech Innovators Conference",
+//     type: "Paid",
+//     category: "Technology",
+//     date: "2026-03-26",
+//     status: "ongoing",
+//     venue: "NSCI Dome, Mumbai",
+//   },
+//   {
+//     id: 2,
+//     title: "Global Culture Fest - Day 1",
+//     type: "Free",
+//     category: "Cultural",
+//     date: "2026-03-26",
+//     status: "ongoing",
+//     venue: "Nehru Centre, Worli",
+//   },
+//   {
+//     id: 3,
+//     title: "Summer Music Jam",
+//     type: "Paid",
+//     category: "Music",
+//     date: "2026-03-28",
+//     status: "upcoming",
+//     venue: "Bandra Fort Grounds",
+//   },
+//   {
+//     id: 4,
+//     title: "Sci-Fi VR Experience",
+//     type: "Free",
+//     category: "Abstract",
+//     date: "2026-03-31",
+//     status: "upcoming",
+//     venue: "Phoenix Palladium",
+//   },
+//   {
+//     id: 5,
+//     title: "Startup Pitch Night",
+//     type: "Free",
+//     category: "Business",
+//     date: "2026-04-05",
+//     status: "upcoming",
+//     venue: "WeWork BKC",
+//   },
+// ];
 
 const CATEGORY_COLORS_MAP = {
   Technology: "text-[#818cf8] bg-[#818cf8]/10 border-[#818cf8]/20",
@@ -84,11 +87,10 @@ const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 // ─── EVENT CARD ──────────────────────────────────────────────────────────────
 const EventCard = ({ event, isActive }) => (
   <div
-    className={`flex items-center justify-between bg-[#111115] px-6 py-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
-      isActive
-        ? "border-l-4 border-l-[#a3e635] border-t-[#1e1e22] border-r-[#1e1e22] border-b-[#1e1e22] hover:border-t-[#a3e635]/20 hover:border-r-[#a3e635]/20 hover:border-b-[#a3e635]/20"
-        : "border-[#1e1e22] border-l-4 border-l-[#2a2a2e] hover:border-[#a3e635]/20"
-    }`}
+    className={`flex items-center justify-between bg-[#111115] px-6 py-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${isActive
+      ? "border-l-4 border-l-[#a3e635] border-t-[#1e1e22] border-r-[#1e1e22] border-b-[#1e1e22] hover:border-t-[#a3e635]/20 hover:border-r-[#a3e635]/20 hover:border-b-[#a3e635]/20"
+      : "border-[#1e1e22] border-l-4 border-l-[#2a2a2e] hover:border-[#a3e635]/20"
+      }`}
   >
     <div>
       <div className="flex items-center gap-2 mb-2">
@@ -98,17 +100,16 @@ const EventCard = ({ event, isActive }) => (
           {event.category}
         </span>
         <span
-          className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
-            event.type === "Free"
-              ? "text-[#34d399] bg-[#34d399]/10 border-[#34d399]/20"
-              : "text-[#fb923c] bg-[#fb923c]/10 border-[#fb923c]/20"
-          }`}
+          className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${event.type === "Free"
+            ? "text-[#34d399] bg-[#34d399]/10 border-[#34d399]/20"
+            : "text-[#fb923c] bg-[#fb923c]/10 border-[#fb923c]/20"
+            }`}
         >
           {event.type}
         </span>
       </div>
       <h4 className="font-bold text-white text-base mb-1">{event.title}</h4>
-      <p className="text-sm text-[#5a5a62]">📍 {event.venue}</p>
+      <p className="text-sm text-[#5a5a62]">📍 {event.venue || event.venueName}</p>
     </div>
 
     {isActive && (
@@ -131,6 +132,33 @@ const UserPage = () => {
 
   const navigate = useNavigate();
 
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await axios.get("http://localhost:9090/api/events");
+        const data = response.data;
+        setEvents(data.map(e => ({
+          ...e,
+          title: e.name || e.title,
+          date: e.startDate || e.date
+        })));
+      } catch (error) {
+        console.error("Backend offline, falling back to mock data", error);
+        setEvents(MOCK_EVENTS.map(e => ({
+          ...e,
+          title: e.name || e.title,
+          date: e.startDate || e.date
+        })));
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvents();
+  }, []);
+
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -141,18 +169,37 @@ const UserPage = () => {
 
   // Dates that have at least one event — for dot indicators
   const eventDateSet = useMemo(
-    () => new Set(EVENT_DATA.map((e) => e.date)),
-    [],
+    () => new Set(events.map((e) => e.date)),
+    [events],
   );
 
   // Filter events by selected calendar date
   const filteredEvents = useMemo(
-    () => EVENT_DATA.filter((e) => e.date === selectedDate),
-    [selectedDate],
+    () => events.filter((e) => e.date === selectedDate),
+    [selectedDate, events],
   );
 
-  const ongoing = filteredEvents.filter((e) => e.status === "ongoing");
-  const upcoming = filteredEvents.filter((e) => e.status === "upcoming");
+  const [userName, setUserName] = useState("Your Profile");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get("http://localhost:9090/api/users/profile", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          }
+        })
+        setUserName(res.data.name);
+      } catch (error) {
+        console.error("Error fetching profile", error);
+        setUserName(MOCK_USER.name);
+      }
+    }
+    fetchProfile();
+  }, []);
+
+  // const ongoing = filteredEvents.filter((e) => e.status === "ongoing");
+  // const upcoming = filteredEvents.filter((e) => e.status === "upcoming");
 
   return (
     <div className="min-h-screen bg-[#0c0c0f] text-white font-sans">
@@ -175,7 +222,7 @@ const UserPage = () => {
             className="flex items-center gap-2 text-[#a0a0ab] hover:text-[#a3e635] transition-colors no-underline"
           >
             <UserCircle size={20} />
-            <span className="text-sm font-medium">View Profile</span>
+            <span className="text-sm font-medium">{userName}</span>
           </Link>
 
           {/* Events dropdown */}
@@ -196,13 +243,25 @@ const UserPage = () => {
                   }}
                   className="w-full text-left px-4 py-3 text-sm text-[#a0a0ab] hover:bg-[#1e1e22] hover:text-[#a3e635] transition-colors"
                 >
-                  Ongoing Events
+                  <Link to="/events/ongoing">Ongoing Events</Link>
                 </button>
                 <button
                   onClick={() => setIsDropdownOpen(false)}
                   className="w-full text-left px-4 py-3 text-sm text-[#a0a0ab] hover:bg-[#1e1e22] hover:text-[#a3e635] transition-colors"
                 >
-                  Upcoming Events
+                  <Link to="/events/upcoming">Upcoming Events</Link>
+                </button>
+                <button
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="w-full text-left px-4 py-3 text-sm text-[#a0a0ab] hover:bg-[#1e1e22] hover:text-[#a3e635] transition-colors"
+                >
+                  <Link to="/events/completed">Completed Events</Link>
+                </button>
+                <button
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="w-full text-left px-4 py-3 text-sm text-[#a0a0ab] hover:bg-[#1e1e22] hover:text-[#a3e635] transition-colors"
+                >
+                  <Link to="/events">All Events</Link>
                 </button>
               </div>
             )}
@@ -214,11 +273,93 @@ const UserPage = () => {
       <main className="max-w-6xl mx-auto px-12 py-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
         {/* ── LEFT: EVENT SECTIONS ──────────────────────────────────── */}
         <div className="lg:col-span-2">
-          <h1 className="text-5xl font-extrabold mb-10 tracking-tight leading-tight">
-            Your Events <span className="text-[#a3e635]">Dashboard</span>
-          </h1>
+          <header className="mb-10">
+            <h1 className="text-5xl font-extrabold mb-10 tracking-tight leading-tight">
+              Your Events <span className="text-[#a3e635]">Dashboard</span>
+            </h1>
+            <p className="text-[#5a5a62] text-lg">Manage and explore your schedule at a glance.</p>
+          </header>
+          {/* Dynamic Schedule Section */}
+          <section className="space-y-6">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 bg-[#111115]/30 border border-[#1e1e22] rounded-3xl">
+                <div className="w-10 h-10 border-2 border-[#a3e635]/20 border-t-[#a3e635] rounded-full animate-spin mb-4" />
+                <p className="text-center text-[#5a5a62] animate-pulse font-medium">
+                  Syncing with EventSphere...
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between border-b border-[#1e1e22] pd-4">
+                  <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-white">
+                    <span className="inline-block w-6 h-0.5 bg-[#a3e635] rounded-full" />
+                    {selectedDate === todayStr ? "Today's Schedule" : `Schedule for ${new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
+                  </h2>
+                  <span className="text-xs font-medium text-[#5a5a62] bg-[#111115] px-3 py-1 rounded-full border border-[#1e1e22]">
+                    {filteredEvents.length} {filteredEvents.length === 1 ? 'Event' : 'Events'}
+                  </span>
+                </div>
 
-          {/* Ongoing Events */}
+                {filteredEvents.length > 0 ? (
+                  <div className="space-y-4">
+                    {/* Show at max 5 events */}
+                    {filteredEvents.slice(0, 5).map((event) => (
+                      <div
+                        key={event.id}
+                        onClick={() => navigate(`/events/${event.id}`)}
+                        className="cursor-pointer"
+                      >
+                        <EventCard key={event.id}
+                          event={event}
+                          isActive={event.status === "ongoing" && selectedDate === todayStr}
+                        />
+                      </div>
+                    ))}
+
+                    {/* Show "View More" if there are more than 5 events */}
+                    {filteredEvents.length > 5 && (
+                      <button onClick={() => navigate("/events")}
+                        className="w-full py-3 border border-dashed border-[#1e1e22] rounder-2xl text-sm hover:text-[#a3e635]/50 transition-all font-medium">+ See {filteredEvents.length - 5} more events for this day</button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 bg-[#111115]/50 border border-dashed border-[#1e1e22] rounded-3xl">
+                    <div className="w-12 h-12 bg-[#1e1e22] rounded-full flex items-center justify-center mb-4 text-xl">
+                      <span className="text-[#3a3a42]">📅</span>
+                    </div>
+                    <p className="text-[#a0a0ab] text-sm font-medium">
+                      No events scheduled for this date.
+                    </p>
+                    {/* Only show Return to Today if the user is not on today's date */}
+                    {selectedDate !== todayStr && (
+                      <button onClick={() => {
+                        setSelectedDate(todayStr);
+                        setCurrentDate(new Date());
+                      }}
+                        className="mt-4 text-[#a3e635] text-xs font-bold uppercase tracking-widest hover:underline"
+                      >
+                        Return to Today
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </section>
+          {/* Events Section*/}
+
+          {/* =<section>
+            { All Events }
+            <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-white mb-5">
+              <span className="inline-block w-6 h-0.5 bg-[#a3e635] rounded-full" />
+              Events
+            </h2>
+            {EVENT_DATA.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </section>
+
+          {Ongoing Events}
           <section className="mb-10">
             <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-white mb-5">
               <span className="inline-block w-6 h-0.5 bg-[#a3e635] rounded-full" />
@@ -240,7 +381,7 @@ const UserPage = () => {
             )}
           </section>
 
-          {/* Upcoming Events */}
+          {Upcoming Events}
           <section>
             <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-white mb-5">
               <span className="inline-block w-6 h-0.5 bg-[#a3e635] rounded-full" />
@@ -260,7 +401,7 @@ const UserPage = () => {
                 </p>
               </div>
             )}
-          </section>
+          </section> */}
         </div>
 
         {/* ── RIGHT: CALENDAR ───────────────────────────────────────── */}
@@ -315,13 +456,12 @@ const UserPage = () => {
                   <button
                     key={day}
                     onClick={() => setSelectedDate(ds)}
-                    className={`relative w-full aspect-square rounded-lg text-xs transition-all ${
-                      isSelected
-                        ? "bg-[#a3e635] text-[#0c0c0f] font-bold"
-                        : isToday
-                          ? "bg-[#1a2c0a] text-[#a3e635] ring-1 ring-[#a3e635]/40"
-                          : "text-[#c0c0c8] hover:bg-[#1e1e22]"
-                    }`}
+                    className={`relative w-full aspect-square rounded-lg text-xs transition-all ${isSelected
+                      ? "bg-[#a3e635] text-[#0c0c0f] font-bold"
+                      : isToday
+                        ? "bg-[#1a2c0a] text-[#a3e635] ring-1 ring-[#a3e635]/40"
+                        : "text-[#c0c0c8] hover:bg-[#1e1e22]"
+                      }`}
                   >
                     {day}
                     {hasEvent && !isSelected && (

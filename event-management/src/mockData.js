@@ -8,6 +8,7 @@ export const MOCK_EVENTS = [
   {
     id: "E-001",
     name: "Tech Fest",
+    category: "Technology",
     startDate: "2026-01-11",
     endDate: "2026-01-15",
     time: "10:00",
@@ -17,17 +18,18 @@ export const MOCK_EVENTS = [
     description: "Annual technology festival featuring coding competitions, hackathons, and robotics challenges.",
     organiserName: "KIIT University",
     programmes: [
-      { id: "P-0011", name: "Blind Fold Coding",  description: "Solve problems without seeing the screen.",            venueName: "Auditorium-1",  venueCapacity: 5000,  seatsLeft: 0,    price: 0 },
-      { id: "P-0012", name: "Bug Bounty",         description: "Find and fix the most bugs in a legacy codebase.",     venueName: "Auditorium-1",  venueCapacity: 5000,  seatsLeft: 0,    price: 0 },
+      { id: "P-0011", name: "Blind Fold Coding", description: "Solve problems without seeing the screen.", venueName: "Auditorium-1", venueCapacity: 5000, seatsLeft: 0, price: 0 },
+      { id: "P-0012", name: "Bug Bounty", description: "Find and fix the most bugs in a legacy codebase.", venueName: "Auditorium-1", venueCapacity: 5000, seatsLeft: 0, price: 0 },
     ],
     feedbacks: [
       { user: "Aniruddha D.", rating: 5, comment: "Absolutely fantastic event! The hackathon was brilliantly organised.", date: "2026-01-16" },
-      { user: "Anuskaa P.",   rating: 4, comment: "Great experience overall. Would love more workshops next time.",       date: "2026-01-17" },
+      { user: "Anuskaa P.", rating: 4, comment: "Great experience overall. Would love more workshops next time.", date: "2026-01-17" },
     ],
   },
   {
     id: "E-002",
     name: "Rangoli Making",
+    category: "Cultural",
     startDate: "2026-01-16",
     endDate: "2026-01-16",
     time: "12:00",
@@ -46,6 +48,7 @@ export const MOCK_EVENTS = [
   {
     id: "E-003",
     name: "Debate",
+    category: "Cultural",
     startDate: "2026-01-18",
     endDate: "2026-01-18",
     time: "08:00",
@@ -56,13 +59,14 @@ export const MOCK_EVENTS = [
     organiserName: "KIIT University",
     programmes: [
       { id: "P-0015", name: "Inter-College Debate", description: "Structured parliamentary debate between college teams.", venueName: "MBA Auditorium", venueCapacity: 1000, seatsLeft: 0, price: 0 },
-      { id: "P-0016", name: "Panel Discussion",     description: "Expert panel on emerging tech and entrepreneurship.",   venueName: "MBA Auditorium", venueCapacity: 1000, seatsLeft: 0, price: 0 },
+      { id: "P-0016", name: "Panel Discussion", description: "Expert panel on emerging tech and entrepreneurship.", venueName: "MBA Auditorium", venueCapacity: 1000, seatsLeft: 0, price: 0 },
     ],
     feedbacks: [],
   },
   {
     id: "E-004",
     name: "Saraswati Puja",
+    category: "Cultural",
     startDate: "2026-01-23",
     endDate: "2026-01-23",
     time: "07:00",
@@ -73,13 +77,14 @@ export const MOCK_EVENTS = [
     organiserName: "KIIT University",
     programmes: [
       { id: "P-0017", name: "Puja Preparation", description: "Traditional rituals and preparation ceremony.", venueName: "Campus-3 OAT1", venueCapacity: 2000, seatsLeft: 0, price: 0 },
-      { id: "P-0018", name: "Cultural Rituals",  description: "Classical dance, music, and devotional performances.", venueName: "Campus-3 OAT1", venueCapacity: 2000, seatsLeft: 0, price: 0 },
+      { id: "P-0018", name: "Cultural Rituals", description: "Classical dance, music, and devotional performances.", venueName: "Campus-3 OAT1", venueCapacity: 2000, seatsLeft: 0, price: 0 },
     ],
     feedbacks: [],
   },
   {
     id: "E-005",
     name: "Republic Day",
+    category: "Cultural",
     startDate: "2026-01-26",
     endDate: "2026-01-26",
     time: "07:30",
@@ -89,16 +94,17 @@ export const MOCK_EVENTS = [
     description: "National Republic Day celebrations with parade, flag hoisting, and cultural performances.",
     organiserName: "KSAC",
     programmes: [
-      { id: "P-0002", name: "Volly Ball Tournament", description: "Inter-school volleyball tournament with knockout rounds.",  venueName: "Campus-8 Tennis Court", venueCapacity: 300,   seatsLeft: 0, price: 0 },
-      { id: "P-0019", name: "Parade Practice",       description: "Mass parade rehearsal with marching bands and NCC.",        venueName: "KISS Athletics Stadium", venueCapacity: 12000, seatsLeft: 0, price: 0 },
-      { id: "P-0020", name: "Flag Hoisting",         description: "Official Republic Day flag hoisting ceremony.",             venueName: "KISS Athletics Stadium", venueCapacity: 12000, seatsLeft: 0, price: 0 },
-      { id: "P-0021", name: "Tennis Tournament",     description: "Open tennis doubles and singles tournament.",               venueName: "Campus-8 Tennis Court", venueCapacity: 300,   seatsLeft: 0, price: 0 },
+      { id: "P-0002", name: "Volly Ball Tournament", description: "Inter-school volleyball tournament with knockout rounds.", venueName: "Campus-8 Tennis Court", venueCapacity: 300, seatsLeft: 0, price: 0 },
+      { id: "P-0019", name: "Parade Practice", description: "Mass parade rehearsal with marching bands and NCC.", venueName: "KISS Athletics Stadium", venueCapacity: 12000, seatsLeft: 0, price: 0 },
+      { id: "P-0020", name: "Flag Hoisting", description: "Official Republic Day flag hoisting ceremony.", venueName: "KISS Athletics Stadium", venueCapacity: 12000, seatsLeft: 0, price: 0 },
+      { id: "P-0021", name: "Tennis Tournament", description: "Open tennis doubles and singles tournament.", venueName: "Campus-8 Tennis Court", venueCapacity: 300, seatsLeft: 0, price: 0 },
     ],
     feedbacks: [],
   },
   {
     id: "E-006",
     name: "Flower Show",
+    category: "Cultural",
     startDate: "2026-01-31",
     endDate: "2026-01-31",
     time: "08:00",
@@ -115,6 +121,7 @@ export const MOCK_EVENTS = [
   {
     id: "E-007",
     name: "KIIT Fest School Wise",
+    category: "Cultural",
     startDate: "2026-02-01",
     endDate: "2026-02-13",
     time: "08:00",
@@ -133,6 +140,7 @@ export const MOCK_EVENTS = [
   {
     id: "E-008",
     name: "KIIT Fest",
+    category: "Cultural",
     startDate: "2026-02-14",
     endDate: "2026-02-16",
     time: "18:00",
@@ -142,19 +150,20 @@ export const MOCK_EVENTS = [
     description: "The flagship annual cultural festival of KIIT University with celebrity performances and events.",
     organiserName: "KIIT University",
     programmes: [
-      { id: "P-0004", name: "Cultural Night", description: "Grand opening night with classical and contemporary performances.",    venueName: "Cricket Stadium", venueCapacity: 10000, seatsLeft: 0, price: 299 },
-      { id: "P-0005", name: "DJ Night",       description: "High-energy DJ night with top electronic artists.",                   venueName: "Cricket Stadium", venueCapacity: 10000, seatsLeft: 0, price: 499 },
-      { id: "P-0006", name: "Star Night",     description: "Celebrity performance night — the grand closing act of KIIT Fest.",   venueName: "Cricket Stadium", venueCapacity: 10000, seatsLeft: 0, price: 999 },
+      { id: "P-0004", name: "Cultural Night", description: "Grand opening night with classical and contemporary performances.", venueName: "Cricket Stadium", venueCapacity: 10000, seatsLeft: 0, price: 299 },
+      { id: "P-0005", name: "DJ Night", description: "High-energy DJ night with top electronic artists.", venueName: "Cricket Stadium", venueCapacity: 10000, seatsLeft: 0, price: 499 },
+      { id: "P-0006", name: "Star Night", description: "Celebrity performance night — the grand closing act of KIIT Fest.", venueName: "Cricket Stadium", venueCapacity: 10000, seatsLeft: 0, price: 999 },
     ],
     feedbacks: [
-      { user: "Sakshi S.",  rating: 5, comment: "Star Night was absolutely incredible. Best event of my college life!", date: "2026-02-17" },
-      { user: "Animesh D.", rating: 5, comment: "DJ Night was fire! The whole campus was electric.",                    date: "2026-02-17" },
+      { user: "Sakshi S.", rating: 5, comment: "Star Night was absolutely incredible. Best event of my college life!", date: "2026-02-17" },
+      { user: "Animesh D.", rating: 5, comment: "DJ Night was fire! The whole campus was electric.", date: "2026-02-17" },
       { user: "Andrila G.", rating: 4, comment: "Great event. Cultural Night was beautiful. Slightly crowded though.", date: "2026-02-17" },
     ],
   },
   {
     id: "E-009",
     name: "Manpasand",
+    category: "Cultural",
     startDate: "2026-02-19",
     endDate: "2026-02-19",
     time: "14:00",
@@ -164,8 +173,8 @@ export const MOCK_EVENTS = [
     description: "A special showcase where students perform their personal passion projects and talents.",
     organiserName: "KIMS",
     programmes: [
-      { id: "P-0007", name: "Food Carnival",               description: "Multi-cuisine food festival with student and local vendors.", venueName: "MBA Garden",     venueCapacity: 3000, seatsLeft: 0, price: 0 },
-      { id: "P-0008", name: "Standup Comedy (Zakir Khan)", description: "Live standup comedy special by Zakir Khan.",                  venueName: "KIMS Auditorium", venueCapacity: 800,  seatsLeft: 0, price: 0 },
+      { id: "P-0007", name: "Food Carnival", description: "Multi-cuisine food festival with student and local vendors.", venueName: "MBA Garden", venueCapacity: 3000, seatsLeft: 0, price: 0 },
+      { id: "P-0008", name: "Standup Comedy (Zakir Khan)", description: "Live standup comedy special by Zakir Khan.", venueName: "KIMS Auditorium", venueCapacity: 800, seatsLeft: 0, price: 0 },
     ],
     feedbacks: [
       { user: "Kunal P.", rating: 5, comment: "Zakir Khan was absolutely hilarious. Best night ever!", date: "2026-02-20" },
@@ -174,6 +183,7 @@ export const MOCK_EVENTS = [
   {
     id: "E-010",
     name: "Rang-e-Bahar",
+    category: "Cultural",
     startDate: "2026-03-04",
     endDate: "2026-03-25",
     time: "07:00",
@@ -183,14 +193,15 @@ export const MOCK_EVENTS = [
     description: "Spring celebration festival with Holi-themed events, cultural programs, and outdoor activities.",
     organiserName: "KSAC",
     programmes: [
-      { id: "P-0009", name: "Holi Celebration", description: "Campus-wide Holi festival with organic colours and music.",        venueName: "Cricket Stadium", venueCapacity: 10000, seatsLeft: 4312, price: 199 },
-      { id: "P-0010", name: "Cultural Show",    description: "Closing cultural show with folk dance, drama and music.",          venueName: "Auditorium-1",    venueCapacity: 5000,  seatsLeft: 892,  price: 149 },
+      { id: "P-0009", name: "Holi Celebration", description: "Campus-wide Holi festival with organic colours and music.", venueName: "Cricket Stadium", venueCapacity: 10000, seatsLeft: 4312, price: 199 },
+      { id: "P-0010", name: "Cultural Show", description: "Closing cultural show with folk dance, drama and music.", venueName: "Auditorium-1", venueCapacity: 5000, seatsLeft: 892, price: 149 },
     ],
     feedbacks: [],
   },
   {
     id: "E-011",
     name: "Spring Hackathon",
+    category: "Technology",
     startDate: "2026-04-10",
     endDate: "2026-04-12",
     time: "09:00",
@@ -200,15 +211,16 @@ export const MOCK_EVENTS = [
     description: "A 48-hour coding marathon open to all students. Build innovative solutions for real-world problems.",
     organiserName: "KIIT University",
     programmes: [
-      { id: "P-S01", name: "Web Track",        description: "Build a full-stack web app solving a real campus problem.",   venueName: "MBA Auditorium",  venueCapacity: 1000, seatsLeft: 600,  price: 0 },
-      { id: "P-S02", name: "AI / ML Track",    description: "Develop a machine learning or AI-powered application.",       venueName: "Campus-3 OAT1",   venueCapacity: 2000, seatsLeft: 1540, price: 0 },
-      { id: "P-S03", name: "Open Innovation",  description: "No restrictions — build anything that makes a difference.",   venueName: "Campus-6 OAT",    venueCapacity: 800,  seatsLeft: 312,  price: 0 },
+      { id: "P-S01", name: "Web Track", description: "Build a full-stack web app solving a real campus problem.", venueName: "MBA Auditorium", venueCapacity: 1000, seatsLeft: 600, price: 0 },
+      { id: "P-S02", name: "AI / ML Track", description: "Develop a machine learning or AI-powered application.", venueName: "Campus-3 OAT1", venueCapacity: 2000, seatsLeft: 1540, price: 0 },
+      { id: "P-S03", name: "Open Innovation", description: "No restrictions — build anything that makes a difference.", venueName: "Campus-6 OAT", venueCapacity: 800, seatsLeft: 312, price: 0 },
     ],
     feedbacks: [],
   },
   {
     id: "E-012",
     name: "Cultural Carnival",
+    category: "Cultural",
     startDate: "2026-04-20",
     endDate: "2026-04-22",
     time: "10:00",
@@ -218,15 +230,16 @@ export const MOCK_EVENTS = [
     description: "A grand cultural carnival celebrating diversity with music, dance, food, and art from across India.",
     organiserName: "KIMS",
     programmes: [
-      { id: "P-C01", name: "Folk Dance Competition", description: "Inter-college folk dance competition across Indian states.",    venueName: "KISS Athletics Stadium", venueCapacity: 12000, seatsLeft: 9800, price: 99  },
-      { id: "P-C02", name: "Food Festival",          description: "Multi-cuisine food festival showcasing dishes from India.",     venueName: "MBA Garden",             venueCapacity: 3000,  seatsLeft: 2100, price: 149 },
-      { id: "P-C03", name: "Art Exhibition",         description: "Live art installations by student artists.",                    venueName: "MBA Auditorium",         venueCapacity: 1000,  seatsLeft: 720,  price: 49  },
+      { id: "P-C01", name: "Folk Dance Competition", description: "Inter-college folk dance competition across Indian states.", venueName: "KISS Athletics Stadium", venueCapacity: 12000, seatsLeft: 9800, price: 99 },
+      { id: "P-C02", name: "Food Festival", description: "Multi-cuisine food festival showcasing dishes from India.", venueName: "MBA Garden", venueCapacity: 3000, seatsLeft: 2100, price: 149 },
+      { id: "P-C03", name: "Art Exhibition", description: "Live art installations by student artists.", venueName: "MBA Auditorium", venueCapacity: 1000, seatsLeft: 720, price: 49 },
     ],
     feedbacks: [],
   },
   {
     id: "E-013",
     name: "Inter-College Sports Meet",
+    category: "Sports",
     startDate: "2026-05-01",
     endDate: "2026-05-05",
     time: "08:00",
@@ -236,9 +249,9 @@ export const MOCK_EVENTS = [
     description: "Annual inter-college sports meet featuring athletics, team sports, and individual competitions.",
     organiserName: "KSAC",
     programmes: [
-      { id: "P-SP1", name: "Athletics Track",  description: "100m, 200m, 400m sprints and long-distance races.",          venueName: "KISS Athletics Stadium", venueCapacity: 12000, seatsLeft: 8000, price: 0 },
-      { id: "P-SP2", name: "Basketball",       description: "Inter-college basketball knockout tournament.",               venueName: "Campus-3 OAT1",          venueCapacity: 2000,  seatsLeft: 1800, price: 0 },
-      { id: "P-SP3", name: "Badminton",        description: "Singles and doubles badminton championships.",                venueName: "MBA Auditorium",         venueCapacity: 1000,  seatsLeft: 950,  price: 0 },
+      { id: "P-SP1", name: "Athletics Track", description: "100m, 200m, 400m sprints and long-distance races.", venueName: "KISS Athletics Stadium", venueCapacity: 12000, seatsLeft: 8000, price: 0 },
+      { id: "P-SP2", name: "Basketball", description: "Inter-college basketball knockout tournament.", venueName: "Campus-3 OAT1", venueCapacity: 2000, seatsLeft: 1800, price: 0 },
+      { id: "P-SP3", name: "Badminton", description: "Singles and doubles badminton championships.", venueName: "MBA Auditorium", venueCapacity: 1000, seatsLeft: 950, price: 0 },
     ],
     feedbacks: [],
   },
@@ -249,42 +262,50 @@ export const MOCK_EVENTS = [
 // These are the fake accounts loaded by DataLoader at Spring Boot startup.
 export const MOCK_BANK_ACCOUNTS = [
   {
-    userId:      "U-0001",
-    accountNo:   "4111111111111111",  // Visa test number
-    cardHolder:  "ANIRUDDHA DUTTA",
-    expiry:      "12/28",
-    cvv:         "737",
-    balance:     15000.00,
-    upiId:       "ishaaaaan@okaxis",
+    userId: "U-0001",
+    accountNo: "4111111111111111",  // Visa test number
+    cardHolder: "ANIRUDDHA DUTTA",
+    expiry: "12/28",
+    cvv: "737",
+    balance: 15000.00,
+    upiId: "ishaaaaan@okaxis",
     netBankingId: "dutta.aniruddha",
     netBankingPw: "Bank@1234",
-    bankName:    "Axis Bank",
+    bankName: "Axis Bank",
   },
   {
-    userId:      "U-0002",
-    accountNo:   "5500005555555559",  // Mastercard test
-    cardHolder:  "ANUSKAA PARIDA",
-    expiry:      "06/27",
-    cvv:         "820",
-    balance:     8500.00,
-    upiId:       "anuskaaaaa@okhdfc",
+    userId: "U-0002",
+    accountNo: "5500005555555559",  // Mastercard test
+    cardHolder: "ANUSKAA PARIDA",
+    expiry: "06/27",
+    cvv: "820",
+    balance: 8500.00,
+    upiId: "anuskaaaaa@okhdfc",
     netBankingId: "parida.anuskaa",
     netBankingPw: "Bank@5678",
-    bankName:    "HDFC Bank",
+    bankName: "HDFC Bank",
   },
   {
-    userId:      "U-0003",
-    accountNo:   "4012888888881881",
-    cardHolder:  "ABHISHEK PAYRA",
-    expiry:      "03/29",
-    cvv:         "415",
-    balance:     22000.00,
-    upiId:       "abhishhhhek@oksbi",
+    userId: "U-0003",
+    accountNo: "4012888888881881",
+    cardHolder: "ABHISHEK PAYRA",
+    expiry: "03/29",
+    cvv: "415",
+    balance: 22000.00,
+    upiId: "abhishhhhek@oksbi",
     netBankingId: "payra.abhishek",
     netBankingPw: "Bank@9012",
-    bankName:    "SBI",
+    bankName: "SBI",
   },
 ];
 
 // Helper to get event by ID
 export const getEventById = (id) => MOCK_EVENTS.find(e => e.id === id) || null;
+
+export const MOCK_USER = {
+  id: 1,
+  name: "Aniruddha Dutta",
+  email: "aniruddha@example.com",
+  role: "SDE",
+  college: "KIIT University"
+};

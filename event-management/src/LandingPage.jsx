@@ -86,37 +86,37 @@ export default function LandingPage() {
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0c0c0f] text-white">
+    <div className="min-h-screen bg-pageBg text-main">
       {/* ── NAVBAR ────────────────────────────────────────────────────── */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-12 h-16 transition-all duration-300 ${
           scrolled
-            ? "bg-[#0c0c0f]/90 backdrop-blur-md border-b border-[#1e1e22]"
+            ? "bg-pageBg/90 backdrop-blur-md border-b border-border"
             : "bg-transparent"
         }`}
       >
         {/* Logo */}
         <div className="font-bold text-xl tracking-tight">
-          Event<span className="text-[#a3e635]">Sphere</span>
+          Event<span className="text-themeAccent">Sphere</span>
         </div>
 
         {/* Nav links */}
         <nav className="flex items-center gap-8">
           <a
             href="#features"
-            className="text-sm text-[#6a6a72] hover:text-white transition-colors"
+            className="text-sm text-textMuted hover:text-main transition-colors"
           >
             Features
           </a>
           <a
             href="#how-it-works"
-            className="text-sm text-[#6a6a72] hover:text-white transition-colors"
+            className="text-sm text-textMuted hover:text-main transition-colors"
           >
             How It Works
           </a>
           <a
             href="#roles"
-            className="text-sm text-[#6a6a72] hover:text-white transition-colors"
+            className="text-sm text-textMuted hover:text-main transition-colors"
           >
             Roles
           </a>
@@ -127,13 +127,13 @@ export default function LandingPage() {
           <ThemeToggle />
           <Link
             to="/login"
-            className="text-sm text-[#a0a0ab] hover:text-white transition-colors"
+            className="text-sm text-textMuted hover:text-main transition-colors"
           >
             Log In
           </Link>
           <Link
             to="/roleselect"
-            className="bg-[#a3e635] text-[#0c0c0f] font-bold text-sm px-4 py-2 rounded-lg hover:bg-[#b8f056] transition-all"
+            className="bg-themeAccent text-[#0c0c0f] font-bold text-sm px-4 py-2 rounded-lg hover:bg-[#b8f056] transition-all"
           >
             Sign Up →
           </Link>
@@ -143,8 +143,8 @@ export default function LandingPage() {
       {/* ── HERO ──────────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center px-12 pt-24 pb-16 overflow-hidden">
         {/* Glow orbs */}
-        <div className="absolute top-[10%] right-[5%] w-96 h-96 rounded-full bg-[#a3e635]/5 blur-[80px] pointer-events-none" />
-        <div className="absolute bottom-[10%] left-0 w-64 h-64 rounded-full bg-[#a3e635]/5 blur-[80px] pointer-events-none" />
+        <div className="absolute top-[10%] right-[5%] w-96 h-96 rounded-full bg-themeAccent/5 blur-[80px] pointer-events-none" />
+        <div className="absolute bottom-[10%] left-0 w-64 h-64 rounded-full bg-themeAccent/5 blur-[80px] pointer-events-none" />
 
         <div
           className="max-w-6xl mx-auto w-full grid gap-20 items-center"
@@ -154,16 +154,16 @@ export default function LandingPage() {
           <div>
             {/* Heading */}
             <h1
-              className="font-extrabold leading-none tracking-tighter text-white mb-6"
+              className="font-extrabold leading-none tracking-tighter text-main mb-6"
               style={{ fontSize: "clamp(44px, 5.5vw, 72px)" }}
             >
               Your Complete
               <br />
-              <span className="text-[#a3e635]">Event</span> Ecosystem
+              <span className="text-themeAccent">Event</span> Ecosystem
             </h1>
 
             {/* Description */}
-            <p className="text-[#6a6a72] text-lg leading-relaxed max-w-md mb-10 font-light">
+            <p className="text-textMuted text-lg leading-relaxed max-w-md mb-10 font-light">
               EventSphere is a centralised platform where organisers create
               events, admins oversee approvals, and users discover and book —
               simple, structured, and seamless.
@@ -172,28 +172,29 @@ export default function LandingPage() {
             {/* CTA button */}
             <Link
               to="/roleselect"
-              className="inline-flex items-center gap-2 bg-[#a3e635] text-[#0c0c0f] font-bold text-base px-8 py-4 rounded-xl hover:bg-[#b8f056] hover:shadow-lg transition-all"
+              className="inline-flex items-center gap-2 bg-themeAccent text-[#0c0c0f] font-bold text-base px-8 py-4 rounded-xl hover:bg-[#b8f056] hover:shadow-lg transition-all"
             >
               Get Started — It's Free →
             </Link>
           </div>
 
           {/* Right — Interactive Calendar (compact, like UserPage) */}
-          <div className="bg-[#131317] border border-[#1e1e22] rounded-2xl p-5 shadow-2xl">
+          {/* Right — Interactive Calendar (compact, like UserPage) */}
+          <div className="bg-cardBg border border-border rounded-2xl p-5 shadow-2xl">
             {/* Month navigation */}
             <div className="flex items-center justify-between mb-5">
               <button
                 onClick={prevMonth}
-                className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1e1e22] border border-[#2a2a2e] text-[#a0a0ab] hover:border-[#a3e635] transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-pageBg border border-border text-muted hover:border-[#a3e635] hover:text-main transition-colors"
               >
                 ‹
               </button>
-              <span className="font-bold text-[15px] text-white">
+              <span className="font-bold text-[15px] text-main">
                 {MONTHS[month]} {year}
               </span>
               <button
                 onClick={nextMonth}
-                className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1e1e22] border border-[#2a2a2e] text-[#a0a0ab] hover:border-[#a3e635] transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-pageBg border border-border text-muted hover:border-[#a3e635] hover:text-main transition-colors"
               >
                 ›
               </button>
@@ -204,7 +205,7 @@ export default function LandingPage() {
               {DAYS.map((d) => (
                 <div
                   key={d}
-                  className="text-[10px] font-semibold text-[#3a3a42] py-1"
+                  className="text-[10px] font-semibold text-muted py-1"
                 >
                   {d}
                 </div>
@@ -233,16 +234,16 @@ export default function LandingPage() {
                       relative w-full aspect-square rounded-lg text-[12px] transition-all
                       ${
                         isSelected
-                          ? "bg-[#a3e635] text-[#0c0c0f] font-bold"
+                          ? "bg-themeAccent text-[#0c0c0f] font-bold"
                           : isToday
-                            ? "bg-[#1a2c0a] text-[#a3e635] ring-1 ring-[#a3e635]/40"
-                            : "text-[#c0c0c8] hover:bg-[#1e1e22]"
+                            ? "bg-themeAccent/20 text-themeAccent ring-1 ring-themeAccent/40"
+                            : "text-main hover:bg-pageBg"
                       }
                     `}
                   >
                     {day}
                     {hasEvent && !isSelected && (
-                      <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#a3e635]" />
+                      <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-themeAccent" />
                     )}
                   </button>
                 );
@@ -250,14 +251,14 @@ export default function LandingPage() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#1e1e22]">
-              <span className="text-xs text-[#5a5a62]">
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+              <span className="text-xs text-muted">
                 {eventsOnSelected} event{eventsOnSelected !== 1 ? "s" : ""}{" "}
                 found
               </span>
               <Link
                 to="/roleselect"
-                className="text-xs font-bold bg-[#a3e635] text-[#0c0c0f] px-3 py-1.5 rounded-lg hover:bg-[#b8f056] transition-all"
+                className="text-xs font-bold bg-themeAccent text-[#0c0c0f] px-3 py-1.5 rounded-lg hover:bg-[#b8f056] transition-all"
               >
                 View Events →
               </Link>
@@ -277,12 +278,12 @@ export default function LandingPage() {
           ].map(({ value, label }) => (
             <div
               key={label}
-              className="bg-[#111115] border border-[#1e1e22] rounded-2xl p-8 text-center hover:border-[#a3e635]/20 transition-colors"
+              className="bg-cardBg border border-border rounded-2xl p-8 text-center hover:border-[#a3e635]/20 transition-colors"
             >
-              <p className="text-4xl font-extrabold text-[#a3e635] tracking-tight">
+              <p className="text-4xl font-extrabold text-themeAccent tracking-tight">
                 {value}
               </p>
-              <p className="text-sm text-[#5a5a62] mt-2">{label}</p>
+              <p className="text-sm text-muted mt-2">{label}</p>
             </div>
           ))}
         </div>
@@ -291,10 +292,10 @@ export default function LandingPage() {
       {/* ── FEATURES ──────────────────────────────────────────────────── */}
       <section id="features" className="max-w-6xl mx-auto px-12 py-20">
         <div className="text-center mb-14">
-          <p className="text-xs font-semibold tracking-widest uppercase text-[#a3e635] mb-3">
+          <p className="text-xs font-semibold tracking-widest uppercase text-themeAccent mb-3">
             Platform Features
           </p>
-          <h2 className="text-4xl font-extrabold text-white tracking-tight">
+          <h2 className="text-4xl font-extrabold text-main tracking-tight">
             Everything you need
           </h2>
         </div>
@@ -334,11 +335,11 @@ export default function LandingPage() {
           ].map(({ emoji, title, desc }) => (
             <div
               key={title}
-              className="bg-[#111115] border border-[#1e1e22] rounded-2xl p-8 hover:-translate-y-1 hover:border-[#a3e635]/30 transition-all"
+              className="bg-cardBg border border-border rounded-2xl p-8 hover:-translate-y-1 hover:border-[#a3e635]/30 transition-all"
             >
               <div className="text-3xl mb-5">{emoji}</div>
-              <h3 className="font-bold text-white text-base mb-2">{title}</h3>
-              <p className="text-sm text-[#5a5a62] leading-relaxed">{desc}</p>
+              <h3 className="font-bold text-main text-base mb-2">{title}</h3>
+              <p className="text-sm text-muted leading-relaxed">{desc}</p>
             </div>
           ))}
         </div>
@@ -347,10 +348,10 @@ export default function LandingPage() {
       {/* ── HOW IT WORKS ──────────────────────────────────────────────── */}
       <section id="how-it-works" className="max-w-6xl mx-auto px-12 py-20">
         <div className="text-center mb-14">
-          <p className="text-xs font-semibold tracking-widest uppercase text-[#a3e635] mb-3">
+          <p className="text-xs font-semibold tracking-widest uppercase text-themeAccent mb-3">
             How It Works
           </p>
-          <h2 className="text-4xl font-extrabold text-white tracking-tight">
+          <h2 className="text-4xl font-extrabold text-main tracking-tight">
             Up and running in 3 steps
           </h2>
         </div>
@@ -381,15 +382,15 @@ export default function LandingPage() {
           ].map(({ step, icon, title, desc }) => (
             <div key={step} className="px-8 py-10 relative z-10">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-[#111115] border border-[#1e1e22] flex items-center justify-center text-2xl flex-shrink-0">
+                <div className="w-14 h-14 rounded-2xl bg-cardBg border border-border flex items-center justify-center text-2xl flex-shrink-0">
                   {icon}
                 </div>
                 <span className="text-7xl font-extrabold text-[#1e1e22] leading-none">
                   {step}
                 </span>
               </div>
-              <h3 className="font-bold text-white text-lg mb-3">{title}</h3>
-              <p className="text-sm text-[#5a5a62] leading-relaxed">{desc}</p>
+              <h3 className="font-bold text-main text-lg mb-3">{title}</h3>
+              <p className="text-sm text-muted leading-relaxed">{desc}</p>
             </div>
           ))}
         </div>
@@ -398,13 +399,13 @@ export default function LandingPage() {
       {/* ── ROLES ─────────────────────────────────────────────────────── */}
       <section id="roles" className="max-w-6xl mx-auto px-12 py-20">
         <div className="text-center mb-14">
-          <p className="text-xs font-semibold tracking-widest uppercase text-[#a3e635] mb-3">
+          <p className="text-xs font-semibold tracking-widest uppercase text-themeAccent mb-3">
             Built for Everyone
           </p>
-          <h2 className="text-4xl font-extrabold text-white tracking-tight mb-3">
+          <h2 className="text-4xl font-extrabold text-main tracking-tight mb-3">
             Pick a role, start now.
           </h2>
-          <p className="text-[#5a5a62]">
+          <p className="text-muted">
             After signing up, you'll be directed to your personalised dashboard.
           </p>
         </div>
@@ -414,8 +415,8 @@ export default function LandingPage() {
             {
               role: "User",
               emoji: "👤",
-              tagColor: "text-[#a3e635]",
-              borderClass: "border-[#1e1e22] hover:border-[#a3e635]/40",
+              tagColor: "text-themeAccent",
+              borderClass: "border-border hover:border-[#a3e635]/40",
 
               link: "",
               featured: false,
@@ -447,7 +448,7 @@ export default function LandingPage() {
             //   role: "Admin",
             //   emoji: "🛡️",
             //   tagColor: "text-[#34d399]",
-            //   borderClass: "border-[#1e1e22] hover:border-[#34d399]/40",
+            //   borderClass: "border-border hover:border-[#34d399]/40",
             //   tagline: "Oversee & Control",
             //   link: "/admin",
             //   featured: false,
@@ -473,7 +474,7 @@ export default function LandingPage() {
               <Link
                 key={role}
                 to={link}
-                className={`bg-[#111115] border ${borderClass} rounded-2xl p-9 hover:-translate-y-2 hover:shadow-2xl transition-all text-white no-underline block`}
+                className={`bg-cardBg border ${borderClass} rounded-2xl p-9 hover:-translate-y-2 hover:shadow-2xl transition-all text-main no-underline block`}
               >
                 {/* Featured badge */}
                 {featured && (
@@ -484,7 +485,7 @@ export default function LandingPage() {
 
                 <div className="text-3xl mb-5">{emoji}</div>
 
-                <h3 className="text-xl font-extrabold text-white mb-1">
+                <h3 className="text-xl font-extrabold text-main mb-1">
                   {role}
                 </h3>
                 <p className={`text-sm font-semibold mb-6 ${tagColor}`}>
@@ -495,9 +496,9 @@ export default function LandingPage() {
                   {perks.map((perk) => (
                     <li
                       key={perk}
-                      className="flex items-center gap-3 text-sm text-[#a0a0ab]"
+                      className="flex items-center gap-3 text-sm text-textMuted"
                     >
-                      <span className="text-[#a3e635] font-bold text-base">
+                      <span className="text-themeAccent font-bold text-base">
                         ✓
                       </span>
                       {perk}
@@ -512,21 +513,21 @@ export default function LandingPage() {
 
       {/* ── CTA BANNER ────────────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-12 pb-28">
-        <div className="bg-[#111115] border border-[#1e1e22] rounded-3xl px-16 py-20 flex items-center justify-between gap-12 relative overflow-hidden">
+        <div className="bg-cardBg border border-border rounded-3xl px-16 py-20 flex items-center justify-between gap-12 relative overflow-hidden">
           {/* Background glow */}
-          <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-[#a3e635]/5 blur-[80px] pointer-events-none" />
+          <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-themeAccent/5 blur-[80px] pointer-events-none" />
 
           {/* Text */}
           <div className="relative z-10">
-            <p className="text-xs font-semibold tracking-widest uppercase text-[#a3e635] mb-4">
+            <p className="text-xs font-semibold tracking-widest uppercase text-themeAccent mb-4">
               Ready to get started?
             </p>
-            <h2 className="text-4xl font-extrabold text-white tracking-tight leading-tight mb-4">
+            <h2 className="text-4xl font-extrabold text-main tracking-tight leading-tight mb-4">
               Join EventSphere today.
               <br />
               It's completely free.
             </h2>
-            <p className="text-[#5a5a62] text-base max-w-sm">
+            <p className="text-muted text-base max-w-sm">
               Whether you're here to attend, organise, or manage — your
               dashboard is waiting.
             </p>
@@ -536,13 +537,13 @@ export default function LandingPage() {
           <div className="flex flex-col gap-3 flex-shrink-0 relative z-10">
             <Link
               to="/roleselect"
-              className="bg-[#a3e635] text-[#0c0c0f] font-bold text-base px-10 py-4 rounded-xl hover:bg-[#b8f056] transition-all text-center"
+              className="bg-themeAccent text-[#0c0c0f] font-bold text-base px-10 py-4 rounded-xl hover:bg-[#b8f056] transition-all text-center"
             >
               Create Free Account →
             </Link>
             <Link
               to="/login"
-              className="border border-[#2a2a2e] text-white font-semibold text-base px-10 py-4 rounded-xl hover:border-[#a3e635] hover:text-[#a3e635] transition-all text-center"
+              className="border border-themeBorder text-main font-semibold text-base px-10 py-4 rounded-xl hover:border-[#a3e635] hover:text-themeAccent transition-all text-center"
             >
               Already have an account?
             </Link>
@@ -551,27 +552,27 @@ export default function LandingPage() {
       </section>
 
       {/* ── FOOTER ────────────────────────────────────────────────────── */}
-      <footer className="border-t border-[#1e1e22] max-w-6xl mx-auto px-12 py-9 flex items-center justify-between">
+      <footer className="border-t border-border max-w-6xl mx-auto px-12 py-9 flex items-center justify-between">
         <div className="font-bold text-base">
-          Event<span className="text-[#a3e635]">Sphere</span>
+          Event<span className="text-themeAccent">Sphere</span>
         </div>
 
         <div className="flex items-center gap-6">
           <Link
             to="/user"
-            className="text-sm text-[#3a3a42] hover:text-[#a3e635] transition-colors"
+            className="text-sm text-[#3a3a42] hover:text-themeAccent transition-colors"
           >
             User
           </Link>
           <Link
             to="/organiser"
-            className="text-sm text-[#3a3a42] hover:text-[#a3e635] transition-colors"
+            className="text-sm text-[#3a3a42] hover:text-themeAccent transition-colors"
           >
             Organiser
           </Link>
           <Link
             to="/admin"
-            className="text-sm text-[#3a3a42] hover:text-[#a3e635] transition-colors"
+            className="text-sm text-[#3a3a42] hover:text-themeAccent transition-colors"
           >
             Admin
           </Link>

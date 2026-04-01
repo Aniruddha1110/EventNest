@@ -7,10 +7,10 @@ const ROLES = [
     emoji: "👤",
     title: "User",
     tagline: "Discover & Attend",
-    color: "text-[#a3e635]",
+    color: "text-themeAccent",
     borderHover: "hover:border-[#a3e635]/60",
     selectedBorder: "border-[#a3e635]",
-    selectedBg: "bg-[#a3e635]/5",
+    selectedBg: "bg-themeAccent/5",
     perks: [
       "Browse ongoing & upcoming events",
       "Interactive date calendar",
@@ -67,16 +67,21 @@ export default function RoleSelectPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0c0c0f] text-white flex flex-col">
-
+    <div className="min-h-screen bg-pageBg text-main flex flex-col">
       {/* ── HEADER ──────────────────────────────────────────────────── */}
-      <header className="flex items-center justify-between px-12 h-16 border-b border-[#1e1e22]">
-        <Link to="/" className="font-bold text-xl tracking-tight text-white no-underline">
-          Event<span className="text-[#a3e635]">Sphere</span>
+      <header className="flex items-center justify-between px-12 h-16 border-b border-border">
+        <Link
+          to="/"
+          className="font-bold text-xl tracking-tight text-main no-underline"
+        >
+          Event<span className="text-themeAccent">Sphere</span>
         </Link>
-        <p className="text-sm text-[#5a5a62]">
+        <p className="text-sm text-muted">
           Already have an account?{" "}
-          <Link to="/login" className="text-[#a3e635] font-semibold hover:underline">
+          <Link
+            to="/login"
+            className="text-themeAccent font-semibold hover:underline"
+          >
             Log In
           </Link>
         </p>
@@ -84,17 +89,17 @@ export default function RoleSelectPage() {
 
       {/* ── MAIN ────────────────────────────────────────────────────── */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-16">
-
         {/* Title */}
         <div className="text-center mb-12">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#a3e635] mb-3">
+          <p className="text-xs font-bold uppercase tracking-widest text-themeAccent mb-3">
             Step 1 of 2
           </p>
-          <h1 className="text-4xl font-extrabold text-white tracking-tight mb-3">
+          <h1 className="text-4xl font-extrabold text-main tracking-tight mb-3">
             Choose your role
           </h1>
-          <p className="text-[#5a5a62] text-base max-w-md">
-            Select how you'll use EventSphere. You can only have one role per account.
+          <p className="text-muted text-base max-w-md">
+            Select how you'll use EventSphere. You can only have one role per
+            account.
           </p>
         </div>
 
@@ -106,10 +111,10 @@ export default function RoleSelectPage() {
               <button
                 key={role.key}
                 onClick={() => setSelected(role.key)}
-                className={`bg-[#111115] border-2 rounded-2xl p-7 text-left transition-all hover:-translate-y-1 ${
+                className={`bg-cardBg border-2 rounded-2xl p-7 text-left transition-all hover:-translate-y-1 ${
                   isSelected
                     ? `${role.selectedBorder} ${role.selectedBg}`
-                    : `border-[#1e1e22] ${role.borderHover}`
+                    : `border-border ${role.borderHover}`
                 }`}
               >
                 {/* Badge */}
@@ -122,22 +127,35 @@ export default function RoleSelectPage() {
                 {/* Icon + radio */}
                 <div className="flex items-start justify-between mb-4">
                   <span className="text-3xl">{role.emoji}</span>
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                    isSelected ? `${role.selectedBorder} bg-current` : "border-[#2a2a2e]"
-                  }`}>
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                      isSelected
+                        ? `${role.selectedBorder} bg-current`
+                        : "border-themeBorder"
+                    }`}
+                  >
                     {isSelected && (
-                      <div className="w-2 h-2 rounded-full bg-[#0c0c0f]" />
+                      <div className="w-2 h-2 rounded-full bg-pageBg" />
                     )}
                   </div>
                 </div>
 
-                <h3 className="text-xl font-extrabold text-white mb-1">{role.title}</h3>
-                <p className={`text-sm font-semibold mb-5 ${role.color}`}>{role.tagline}</p>
+                <h3 className="text-xl font-extrabold text-main mb-1">
+                  {role.title}
+                </h3>
+                <p className={`text-sm font-semibold mb-5 ${role.color}`}>
+                  {role.tagline}
+                </p>
 
                 <ul className="space-y-2">
                   {role.perks.map((perk) => (
-                    <li key={perk} className="flex items-center gap-2.5 text-sm text-[#a0a0ab]">
-                      <span className={`font-bold text-base ${role.color}`}>✓</span>
+                    <li
+                      key={perk}
+                      className="flex items-center gap-2.5 text-sm text-textMuted"
+                    >
+                      <span className={`font-bold text-base ${role.color}`}>
+                        ✓
+                      </span>
                       {perk}
                     </li>
                   ))}
@@ -153,11 +171,12 @@ export default function RoleSelectPage() {
           disabled={!selected}
           className={`px-12 py-4 rounded-xl font-bold text-base transition-all ${
             selected
-              ? "bg-[#a3e635] text-[#0c0c0f] hover:bg-[#b8f056] hover:shadow-lg"
+              ? "bg-themeAccent text-[#0c0c0f] hover:bg-[#b8f056] hover:shadow-lg"
               : "bg-[#1e1e22] text-[#3a3a42] cursor-not-allowed"
           }`}
         >
-          Continue as {selected ? ROLES.find((r) => r.key === selected)?.title : "..."} →
+          Continue as{" "}
+          {selected ? ROLES.find((r) => r.key === selected)?.title : "..."} →
         </button>
       </main>
     </div>

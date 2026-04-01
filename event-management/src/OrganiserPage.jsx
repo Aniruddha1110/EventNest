@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
@@ -7,21 +7,13 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeContext";
+import axios from "axios";
+import { MOCK_EVENTS, MOCK_USER } from "./mockData";
 
 // ─── CALENDAR HELPERS ────────────────────────────────────────────────────────
 const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -31,41 +23,41 @@ function getTodayStr() {
 }
 
 // ─── MOCK EVENT DATA ─────────────────────────────────────────────────────────
-const EVENT_DATA = [
-  {
-    id: 1,
-    title: "TechConf 2026",
-    category: "Technology",
-    type: "Paid",
-    date: "2026-03-27",
-    status: "ongoing",
-    venue: "NSCI Dome, Mumbai",
-    capacity: 320,
-    attendees: 249,
-  },
-  {
-    id: 2,
-    title: "Indie Music Night",
-    category: "Music",
-    type: "Paid",
-    date: "2026-04-12",
-    status: "upcoming",
-    venue: "Bandra Fort Grounds",
-    capacity: 500,
-    attendees: 321,
-  },
-  {
-    id: 3,
-    title: "AI & Future Summit",
-    category: "Technology",
-    type: "Paid",
-    date: "2026-04-05",
-    status: "upcoming",
-    venue: "JW Marriott, BKC",
-    capacity: 200,
-    attendees: 0,
-  },
-];
+// const EVENT_DATA = [
+//   {
+//     id: 1,
+//     title: "TechConf 2026",
+//     category: "Technology",
+//     type: "Paid",
+//     date: "2026-03-27",
+//     status: "ongoing",
+//     venue: "NSCI Dome, Mumbai",
+//     capacity: 320,
+//     attendees: 249,
+//   },
+//   {
+//     id: 2,
+//     title: "Indie Music Night",
+//     category: "Music",
+//     type: "Paid",
+//     date: "2026-04-12",
+//     status: "upcoming",
+//     venue: "Bandra Fort Grounds",
+//     capacity: 500,
+//     attendees: 321,
+//   },
+//   {
+//     id: 3,
+//     title: "AI & Future Summit",
+//     category: "Technology",
+//     type: "Paid",
+//     date: "2026-04-05",
+//     status: "upcoming",
+//     venue: "JW Marriott, BKC",
+//     capacity: 200,
+//     attendees: 0,
+//   },
+// ];
 
 const CATEGORY_COLORS = {
   Technology: "text-[#818cf8] bg-[#818cf8]/10 border-[#818cf8]/20",
@@ -89,24 +81,70 @@ const OrganiserPage = () => {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
 
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("Your Profile");
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await axios.get("http://localhost:9090/api/events");
+        const data = response.data;
+        setEvents(
+          data.map((e) => ({
+            ...e,
+            title: e.name || e.title,
+            date: e.startDate || e.date,
+          }))
+        );
+      } catch (error) {
+        console.error("Backend offline, falling back to mock data", error);
+        setEvents(
+          MOCK_EVENTS.map((e) => ({
+            ...e,
+            title: e.name || e.title,
+            date: e.startDate || e.date,
+          }))
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvents();
+  }, []);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get("http://localhost:9090/api/organiser/profile", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        setUserName(res.data.name);
+      } catch (error) {
+        console.error("Error fetching profile", error);
+        setUserName(MOCK_USER.name);
+      }
+    };
+    fetchProfile();
+  }, []);
+
   const fmtDay = (day) =>
     `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
-  const eventDateSet = useMemo(
-    () => new Set(EVENT_DATA.map((e) => e.date)),
-    [],
-  );
+  const eventDateSet = useMemo(() => new Set(events.map((e) => e.date)), [events]);
 
   const filteredEvents = useMemo(
-    () => EVENT_DATA.filter((e) => e.date === selectedDate),
-    [selectedDate],
+    () => events.filter((e) => e.date === selectedDate),
+    [selectedDate, events]
   );
 
-  const ongoing = filteredEvents.filter((e) => e.status === "ongoing");
-  const upcoming = filteredEvents.filter((e) => e.status === "upcoming");
+  // const ongoing = filteredEvents.filter((e) => e.status === "ongoing");
+  // const upcoming = filteredEvents.filter((e) => e.status === "upcoming");
 
   return (
-    <div className="min-h-screen bg-pageBg [#text-main font-sans">
+    <div className="min-h-screen bg-pageBg text-main font-sans">
       {/* ── HEADER ──────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 flex justify-between items-center px-12 h-16 bg-pageBg/90 backdrop-blur-md border-b border-border">
         <button onClick={() => navigate("/")}>
@@ -124,12 +162,12 @@ const OrganiserPage = () => {
             className="flex items-center gap-2 text-textMuted hover:text-themeAccent transition-colors no-underline"
           >
             <UserCircle size={20} />
-            <span className="text-sm font-medium">View Profile</span>
+            <span className="text-sm font-medium">{userName}</span>
           </Link>
 
           {/* Create Event button */}
           <button
-            onClick={() => setShowCreate(true)}
+            onClick={() => navigate("/events/create")}
             className="bg-themeAccent text-[#0c0c0f] font-bold text-sm px-4 py-2 rounded-xl hover:bg-[#b8f056] transition-all"
           >
             + Create New Event
@@ -145,21 +183,34 @@ const OrganiserPage = () => {
             </button>
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-cardBg border border-border rounded-xl shadow-2xl z-10 overflow-hidden">
-                <button
-                  onClick={() => {
-                    setSelectedDate(todayStr);
-                    setIsDropdownOpen(false);
-                  }}
-                  className="w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-[#1e1e22] hover:text-themeAccent transition-colors"
+                <Link
+                  to="/events/ongoing"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="block w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-[#1e1e22] hover:text-themeAccent transition-colors no-underline"
                 >
                   Ongoing Events
-                </button>
-                <button
+                </Link>
+                <Link
+                  to="/events/upcoming"
                   onClick={() => setIsDropdownOpen(false)}
-                  className="w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-[#1e1e22] hover:text-themeAccent transition-colors"
+                  className="block w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-[#1e1e22] hover:text-themeAccent transition-colors no-underline"
                 >
                   Upcoming Events
-                </button>
+                </Link>
+                <Link
+                  to="/events/completed"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="block w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-[#1e1e22] hover:text-themeAccent transition-colors no-underline"
+                >
+                  Completed Events
+                </Link>
+                <Link
+                  to="/events"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="block w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-[#1e1e22] hover:text-themeAccent transition-colors no-underline"
+                >
+                  All Events
+                </Link>
               </div>
             )}
           </div>
@@ -174,53 +225,87 @@ const OrganiserPage = () => {
             Welcome <span className="text-themeAccent">Organisers</span>
           </h1>
 
-          {/* Ongoing Events */}
-          <section className="mb-10">
-            <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-main mb-5">
-              <span className="inline-block w-6 h-0.5 bg-themeAccent rounded-full" />
-              Ongoing Events (Latest 5)
-            </h2>
-
-            {ongoing.length > 0 ? (
-              <div className="space-y-3">
-                {ongoing.map((event) => (
-                  <EventCard key={event.id} event={event} isActive />
-                ))}
-              </div>
-            ) : (
-              <div className="bg-cardBg border border-border rounded-2xl px-6 py-5">
-                <p className="text-[#3a3a42] text-sm italic">
-                  No active events found.
+          {/* Dynamic Schedule Section */}
+          <section className="space-y-6 mb-10">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 bg-[#111115]/30 border border-[#1e1e22] rounded-3xl">
+                <div className="w-10 h-10 border-2 border-[#a3e635]/20 border-t-[#a3e635] rounded-full animate-spin mb-4" />
+                <p className="text-center text-[#5a5a62] animate-pulse font-medium">
+                  Syncing with EventSphere...
                 </p>
               </div>
-            )}
-          </section>
-
-          {/* Upcoming Events */}
-          <section className="mb-10">
-            <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-main mb-5">
-              <span className="inline-block w-6 h-0.5 bg-themeAccent rounded-full" />
-              Upcoming Events
-            </h2>
-
-            {upcoming.length > 0 ? (
-              <div className="space-y-3">
-                {upcoming.map((event) => (
-                  <EventCard key={event.id} event={event} />
-                ))}
-              </div>
             ) : (
-              <div className="bg-cardBg border border-border rounded-2xl px-6 py-5">
-                <p className="text-[#3a3a42] text-sm italic">
-                  No upcoming events for this date.
-                </p>
-              </div>
+              <>
+                <div className="flex items-center justify-between border-b border-[#1e1e22] pb-4">
+                  <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-white">
+                    <span className="inline-block w-6 h-0.5 bg-[#a3e635] rounded-full" />
+                    {selectedDate === todayStr
+                      ? "Today's Schedule"
+                      : `Schedule for ${new Date(selectedDate).toLocaleDateString("en-US", {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })}`}
+                  </h2>
+                  <span className="text-xs font-medium text-[#5a5a62] bg-[#111115] px-3 py-1 rounded-full border border-[#1e1e22]">
+                    {filteredEvents.length} {filteredEvents.length === 1 ? "Event" : "Events"}
+                  </span>
+                </div>
+
+                {filteredEvents.length > 0 ? (
+                  <div className="space-y-4">
+                    {/* Show at max 5 events */}
+                    {filteredEvents.slice(0, 5).map((event) => (
+                      <div
+                        key={event.id}
+                        onClick={() => navigate(`/events/${event.id}`)}
+                        className="cursor-pointer"
+                      >
+                        <EventCard
+                          event={event}
+                          isActive={event.status === "ongoing" && selectedDate === todayStr}
+                        />
+                      </div>
+                    ))}
+
+                    {/* Show "View More" if there are more than 5 events */}
+                    {filteredEvents.length > 5 && (
+                      <button
+                        onClick={() => navigate("/events")}
+                        className="w-full py-3 border border-dashed border-[#1e1e22] rounded-2xl text-sm hover:text-[#a3e635]/50 transition-all font-medium"
+                      >
+                        + See {filteredEvents.length - 5} more events for this day
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 bg-[#111115]/50 border border-dashed border-[#1e1e22] rounded-3xl">
+                    <div className="w-12 h-12 bg-[#1e1e22] rounded-full flex items-center justify-center mb-4 text-xl">
+                      <span className="text-[#3a3a42]">📅</span>
+                    </div>
+                    <p className="text-[#a0a0ab] text-sm font-medium">
+                      No events scheduled for this date.
+                    </p>
+                    {selectedDate !== todayStr && (
+                      <button
+                        onClick={() => {
+                          setSelectedDate(todayStr);
+                          setCurrentDate(new Date());
+                        }}
+                        className="mt-4 text-[#a3e635] text-xs font-bold uppercase tracking-widest hover:underline"
+                      >
+                        Return to Today
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </section>
 
           {/* Create New Event CTA */}
           <button
-            onClick={() => setShowCreate(true)}
+            onClick={() => navigate("/events/create")}
             className="bg-themeAccent text-[#0c0c0f] font-extrabold text-sm px-8 py-4 rounded-xl hover:bg-[#b8f056] transition-all"
           >
             + CREATE NEW EVENT
@@ -250,10 +335,7 @@ const OrganiserPage = () => {
 
             <div className="grid grid-cols-7 gap-1 text-center mb-2">
               {DAYS.map((d) => (
-                <div
-                  key={d}
-                  className="text-[10px] font-semibold text-[#3a3a42] py-1"
-                >
+                <div key={d} className="text-[10px] font-semibold text-[#3a3a42] py-1">
                   {d}
                 </div>
               ))}
@@ -279,8 +361,8 @@ const OrganiserPage = () => {
                       isSelected
                         ? "bg-themeAccent text-[#0c0c0f] font-bold"
                         : isToday
-                          ? "bg-themeAccent/20 text-themeAccent ring-1 ring-themeAccent/40"
-                          : "text-[#c0c0c8] hover:bg-[#1e1e22]"
+                        ? "bg-themeAccent/20 text-themeAccent ring-1 ring-themeAccent/40"
+                        : "text-[#c0c0c8] hover:bg-[#1e1e22]"
                     }`}
                   >
                     {day}
@@ -294,10 +376,8 @@ const OrganiserPage = () => {
 
             <div className="mt-6 pt-5 border-t border-border">
               <p className="text-xs text-muted mb-4">
-                <span className="text-main font-bold">
-                  {filteredEvents.length}
-                </span>{" "}
-                event{filteredEvents.length !== 1 ? "s" : ""} found
+                <span className="text-main font-bold">{filteredEvents.length}</span> event
+                {filteredEvents.length !== 1 ? "s" : ""} found
               </p>
               <button className="w-full bg-themeAccent text-[#0c0c0f] py-2.5 rounded-xl font-bold text-sm hover:bg-[#b8f056] transition-all">
                 View Events
@@ -306,108 +386,6 @@ const OrganiserPage = () => {
           </div>
         </div>
       </main>
-
-      {/* ── CREATE EVENT MODAL ───────────────────────────────────────── */}
-      {showCreate && (
-        <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-6"
-          onClick={() => setShowCreate(false)}
-        >
-          <div
-            className="bg-cardBg border border-border rounded-2xl p-8 w-full max-w-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-themeAccent mb-1">
-                  New Event
-                </p>
-                <h2 className="text-xl font-extrabold text-main">
-                  Create Event
-                </h2>
-              </div>
-              <button
-                onClick={() => setShowCreate(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1e1e22] text-textMuted hover:text-main transition-colors font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                {
-                  label: "Event Title",
-                  placeholder: "e.g. TechConf 2026",
-                  type: "text",
-                },
-                {
-                  label: "Venue",
-                  placeholder: "e.g. NSCI Dome, Mumbai",
-                  type: "text",
-                },
-                { label: "Date", placeholder: "", type: "date" },
-                { label: "Time", placeholder: "", type: "time" },
-              ].map(({ label, placeholder, type }) => (
-                <div key={label}>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-                    {label}
-                  </label>
-                  <input
-                    type={type}
-                    placeholder={placeholder}
-                    className="w-full bg-pageBg border border-border rounded-xl px-4 py-3 text-sm text-main outline-none focus:border-[#a3e635] transition-colors"
-                  />
-                </div>
-              ))}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-                    Capacity
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="e.g. 300"
-                    className="w-full bg-pageBg border border-border rounded-xl px-4 py-3 text-sm text-main outline-none focus:border-[#a3e635] transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-                    Price
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. ₹499 or Free"
-                    className="w-full bg-pageBg border border-border rounded-xl px-4 py-3 text-sm text-main outline-none focus:border-[#a3e635] transition-colors"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-                  Description
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="What's this event about?"
-                  className="w-full bg-pageBg border border-border rounded-xl px-4 py-3 text-sm text-main outline-none focus:border-[#a3e635] transition-colors resize-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowCreate(false)}
-                className="flex-1 border border-themeBorder text-textMuted font-semibold text-sm py-3 rounded-xl hover:border-[#a3e635] hover:text-themeAccent transition-all"
-              >
-                Cancel
-              </button>
-              <button className="flex-1 bg-themeAccent text-[#0c0c0f] font-bold text-sm py-3 rounded-xl hover:bg-[#b8f056] transition-all">
-                Submit for Review →
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -415,9 +393,7 @@ const OrganiserPage = () => {
 // ─── EVENT CARD ──────────────────────────────────────────────────────────────
 const EventCard = ({ event, isActive }) => {
   const pct =
-    event.capacity > 0
-      ? Math.round((event.attendees / event.capacity) * 100)
-      : 0;
+    event.capacity > 0 ? Math.round((event.attendees / event.capacity) * 100) : 0;
   return (
     <div
       className={`flex items-center justify-between bg-cardBg px-6 py-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
@@ -429,7 +405,9 @@ const EventCard = ({ event, isActive }) => {
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-2">
           <span
-            className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${CATEGORY_COLORS[event.category] || "text-textMuted bg-[#1e1e22] border-themeBorder"}`}
+            className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+              CATEGORY_COLORS[event.category] || "text-textMuted bg-[#1e1e22] border-themeBorder"
+            }`}
           >
             {event.category}
           </span>
@@ -449,7 +427,9 @@ const EventCard = ({ event, isActive }) => {
           <div className="flex items-center gap-3">
             <div className="w-32 h-1.5 bg-[#1e1e22] rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full ${pct >= 90 ? "bg-[#ef4444]" : pct >= 70 ? "bg-[#fb923c]" : "bg-themeAccent"}`}
+                className={`h-full rounded-full ${
+                  pct >= 90 ? "bg-[#ef4444]" : pct >= 70 ? "bg-[#fb923c]" : "bg-themeAccent"
+                }`}
                 style={{ width: `${pct}%` }}
               />
             </div>

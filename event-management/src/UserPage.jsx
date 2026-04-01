@@ -84,16 +84,16 @@ const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 // ─── EVENT CARD ──────────────────────────────────────────────────────────────
 const EventCard = ({ event, isActive }) => (
   <div
-    className={`flex items-center justify-between bg-[#111115] px-6 py-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
+    className={`flex items-center justify-between bg-cardBg px-6 py-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
       isActive
         ? "border-l-4 border-l-[#a3e635] border-t-[#1e1e22] border-r-[#1e1e22] border-b-[#1e1e22] hover:border-t-[#a3e635]/20 hover:border-r-[#a3e635]/20 hover:border-b-[#a3e635]/20"
-        : "border-[#1e1e22] border-l-4 border-l-[#2a2a2e] hover:border-[#a3e635]/20"
+        : "border-border border-l-4 border-l-[#2a2a2e] hover:border-[#a3e635]/20"
     }`}
   >
     <div>
       <div className="flex items-center gap-2 mb-2">
         <span
-          className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${CATEGORY_COLORS_MAP[event.category] || "text-[#a0a0ab] bg-[#1e1e22] border-[#2a2a2e]"}`}
+          className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${CATEGORY_COLORS_MAP[event.category] || "text-textMuted bg-[#1e1e22] border-themeBorder"}`}
         >
           {event.category}
         </span>
@@ -107,13 +107,13 @@ const EventCard = ({ event, isActive }) => (
           {event.type}
         </span>
       </div>
-      <h4 className="font-bold text-white text-base mb-1">{event.title}</h4>
-      <p className="text-sm text-[#5a5a62]">📍 {event.venue}</p>
+      <h4 className="font-bold text-main text-base mb-1">{event.title}</h4>
+      <p className="text-sm text-muted">📍 {event.venue}</p>
     </div>
 
     {isActive && (
-      <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#a3e635] uppercase tracking-wider flex-shrink-0 ml-4">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#a3e635] animate-pulse" />
+      <span className="flex items-center gap-1.5 text-[11px] font-bold text-themeAccent uppercase tracking-wider flex-shrink-0 ml-4">
+        <span className="w-1.5 h-1.5 rounded-full bg-themeAccent animate-pulse" />
         Active Now
       </span>
     )}
@@ -155,13 +155,13 @@ const UserPage = () => {
   const upcoming = filteredEvents.filter((e) => e.status === "upcoming");
 
   return (
-    <div className="min-h-screen bg-[#0c0c0f] text-white font-sans">
+    <div className="min-h-screen bg-pageBg text-main font-sans">
       {/* ── HEADER ──────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 flex justify-between items-center px-12 h-16 bg-[#0c0c0f]/90 backdrop-blur-md border-b border-[#1e1e22]">
+      <header className="sticky top-0 z-50 flex justify-between items-center px-12 h-16 bg-pageBg/90 backdrop-blur-md border-b border-border">
         {/* Logo */}
         <button onClick={() => navigate("/")}>
           <span className="font-bold text-xl tracking-tight">
-            Event<span className="text-[#a3e635]">Sphere</span>
+            Event<span className="text-themeAccent">Sphere</span>
           </span>
         </button>
 
@@ -172,7 +172,7 @@ const UserPage = () => {
           {/* View Profile */}
           <Link
             to="/userprofile"
-            className="flex items-center gap-2 text-[#a0a0ab] hover:text-[#a3e635] transition-colors no-underline"
+            className="flex items-center gap-2 text-textMuted hover:text-themeAccent transition-colors no-underline"
           >
             <UserCircle size={20} />
             <span className="text-sm font-medium">View Profile</span>
@@ -182,25 +182,25 @@ const UserPage = () => {
           <div className="relative">
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 bg-[#111115] border border-[#1e1e22] rounded-xl px-4 py-2 text-sm text-[#a0a0ab] hover:border-[#a3e635] hover:text-white transition-all"
+              className="flex items-center gap-2 bg-cardBg border border-border rounded-xl px-4 py-2 text-sm text-textMuted hover:border-[#a3e635] hover:text-main transition-all"
             >
               Events <ChevronDown size={14} />
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-[#131317] border border-[#1e1e22] rounded-xl shadow-2xl z-10 overflow-hidden">
+              <div className="absolute right-0 mt-2 w-48 bg-cardBg border border-border rounded-xl shadow-2xl z-10 overflow-hidden">
                 <button
                   onClick={() => {
                     setSelectedDate(todayStr);
                     setIsDropdownOpen(false);
                   }}
-                  className="w-full text-left px-4 py-3 text-sm text-[#a0a0ab] hover:bg-[#1e1e22] hover:text-[#a3e635] transition-colors"
+                  className="w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-[#1e1e22] hover:text-themeAccent transition-colors"
                 >
                   Ongoing Events
                 </button>
                 <button
                   onClick={() => setIsDropdownOpen(false)}
-                  className="w-full text-left px-4 py-3 text-sm text-[#a0a0ab] hover:bg-[#1e1e22] hover:text-[#a3e635] transition-colors"
+                  className="w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-[#1e1e22] hover:text-themeAccent transition-colors"
                 >
                   Upcoming Events
                 </button>
@@ -215,13 +215,13 @@ const UserPage = () => {
         {/* ── LEFT: EVENT SECTIONS ──────────────────────────────────── */}
         <div className="lg:col-span-2">
           <h1 className="text-5xl font-extrabold mb-10 tracking-tight leading-tight">
-            Your Events <span className="text-[#a3e635]">Dashboard</span>
+            Your Events <span className="text-themeAccent">Dashboard</span>
           </h1>
 
           {/* Ongoing Events */}
           <section className="mb-10">
-            <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-white mb-5">
-              <span className="inline-block w-6 h-0.5 bg-[#a3e635] rounded-full" />
+            <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-main mb-5">
+              <span className="inline-block w-6 h-0.5 bg-themeAccent rounded-full" />
               Ongoing Events
             </h2>
 
@@ -232,7 +232,7 @@ const UserPage = () => {
                 ))}
               </div>
             ) : (
-              <div className="bg-[#111115] border border-[#1e1e22] rounded-2xl px-6 py-5">
+              <div className="bg-cardBg border border-border rounded-2xl px-6 py-5">
                 <p className="text-[#3a3a42] text-sm italic">
                   No ongoing events for this date.
                 </p>
@@ -242,8 +242,8 @@ const UserPage = () => {
 
           {/* Upcoming Events */}
           <section>
-            <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-white mb-5">
-              <span className="inline-block w-6 h-0.5 bg-[#a3e635] rounded-full" />
+            <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-main mb-5">
+              <span className="inline-block w-6 h-0.5 bg-themeAccent rounded-full" />
               Upcoming Events
             </h2>
 
@@ -254,7 +254,7 @@ const UserPage = () => {
                 ))}
               </div>
             ) : (
-              <div className="bg-[#111115] border border-[#1e1e22] rounded-2xl px-6 py-5">
+              <div className="bg-cardBg border border-border rounded-2xl px-6 py-5">
                 <p className="text-[#3a3a42] text-sm italic">
                   No upcoming events for this date.
                 </p>
@@ -265,21 +265,21 @@ const UserPage = () => {
 
         {/* ── RIGHT: CALENDAR ───────────────────────────────────────── */}
         <div className="self-start sticky top-24">
-          <div className="bg-[#131317] border border-[#1e1e22] rounded-2xl p-6 shadow-2xl">
+          <div className="bg-cardBg border border-border rounded-2xl p-6 shadow-2xl">
             {/* Month nav */}
             <div className="flex items-center justify-between mb-6">
               <button
                 onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1e1e22] border border-[#2a2a2e] text-[#a0a0ab] hover:border-[#a3e635] hover:text-white transition-all"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1e1e22] border border-themeBorder text-textMuted hover:border-[#a3e635] hover:text-main transition-all"
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="font-bold text-white text-base">
+              <span className="font-bold text-main text-base">
                 {MONTHS[month]} {year}
               </span>
               <button
                 onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1e1e22] border border-[#2a2a2e] text-[#a0a0ab] hover:border-[#a3e635] hover:text-white transition-all"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1e1e22] border border-themeBorder text-textMuted hover:border-[#a3e635] hover:text-main transition-all"
               >
                 <ChevronRight size={16} />
               </button>
@@ -317,15 +317,15 @@ const UserPage = () => {
                     onClick={() => setSelectedDate(ds)}
                     className={`relative w-full aspect-square rounded-lg text-xs transition-all ${
                       isSelected
-                        ? "bg-[#a3e635] text-[#0c0c0f] font-bold"
+                        ? "bg-themeAccent text-[#0c0c0f] font-bold"
                         : isToday
-                          ? "bg-[#1a2c0a] text-[#a3e635] ring-1 ring-[#a3e635]/40"
+                          ? "bg-themeAccent/20 text-themeAccent ring-1 ring-themeAccent/40"
                           : "text-[#c0c0c8] hover:bg-[#1e1e22]"
                     }`}
                   >
                     {day}
                     {hasEvent && !isSelected && (
-                      <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#a3e635]" />
+                      <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-themeAccent" />
                     )}
                   </button>
                 );
@@ -333,14 +333,14 @@ const UserPage = () => {
             </div>
 
             {/* Footer */}
-            <div className="mt-6 pt-5 border-t border-[#1e1e22]">
-              <p className="text-xs text-[#5a5a62] mb-4">
-                <span className="text-white font-bold">
+            <div className="mt-6 pt-5 border-t border-border">
+              <p className="text-xs text-muted mb-4">
+                <span className="text-main font-bold">
                   {filteredEvents.length}
                 </span>{" "}
                 event{filteredEvents.length !== 1 ? "s" : ""} found
               </p>
-              <button className="w-full bg-[#a3e635] text-[#0c0c0f] py-2.5 rounded-xl font-bold text-sm hover:bg-[#b8f056] transition-all">
+              <button className="w-full bg-themeAccent text-[#0c0c0f] py-2.5 rounded-xl font-bold text-sm hover:bg-[#b8f056] transition-all">
                 View Events
               </button>
             </div>

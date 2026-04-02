@@ -19,6 +19,7 @@ import TicketPage from "./TicketPage";
 import RoleSelectPage from "./RoleSelect";
 import SignUpPage from "./SignupPage";
 import CompletedEventsPage from "./CompletedEventsPage";
+import LoginPage from "./LoginPage";
 
 
 
@@ -55,6 +56,7 @@ function App() {
         <Route path="/events/:eventId/payment" element={<PaymentPage />} />
         <Route path="/profile/ticket" element={<TicketHistory />} />
         <Route path="/select-role" element={<RoleSelectPage />} />
+        <Route path="/login" element={<LoginPage />} />
       </Routes>
     </ThemeProvider>
   );

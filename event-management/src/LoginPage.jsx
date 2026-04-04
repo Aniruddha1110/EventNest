@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
+
+// Client ID (OAuth) = 564476414065-vln380j3vp2n4g25f899q98pomedptcj.apps.googleusercontent.com
+
 // ─── Auth pages are intentionally always dark ─────────────────────────────────
 const API = "http://localhost:9090";
 
@@ -121,9 +124,9 @@ export default function LoginPage() {
 
   // ── Google OAuth ──────────────────────────────────────────────────────────
   const handleGoogleLogin = () => {
-    // When backend is ready:
-    // window.location.href = `${API}/oauth2/authorization/google?role=${role}`;
-    setError("Google OAuth requires the backend to be running. Use username/email login instead.");
+    // `${API}/oauth2/authorization/google?role=${role}`
+    window.location.href ="http://localhost:9090/oauth2/authorization/google" ;
+    // setError("Google OAuth requires the backend to be running. Use username/email login instead.");
   };
 
   const handleKeyDown = (e) => { if (e.key === "Enter") handleLogin(); };

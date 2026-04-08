@@ -125,7 +125,7 @@ export default function LoginPage() {
   // ── Google OAuth ──────────────────────────────────────────────────────────
   const handleGoogleLogin = () => {
     // `${API}/oauth2/authorization/google?role=${role}`
-    window.location.href ="http://localhost:9090/oauth2/authorization/google" ;
+    window.location.href =`http://localhost:9090/oauth2/authorization/google?role=${role}` ;
     // setError("Google OAuth requires the backend to be running. Use username/email login instead.");
   };
 

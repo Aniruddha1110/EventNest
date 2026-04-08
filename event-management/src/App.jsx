@@ -20,6 +20,7 @@ import RoleSelectPage from "./RoleSelect";
 import SignUpPage from "./SignupPage";
 import CompletedEventsPage from "./CompletedEventsPage";
 import LoginPage from "./LoginPage";
+import OAuth2RedirectHandler from "./OAuth2RedirectHandler";
 
 
 
@@ -57,6 +58,7 @@ function App() {
         <Route path="/profile/ticket" element={<TicketHistory />} />
         <Route path="/select-role" element={<RoleSelectPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
       </Routes>
     </ThemeProvider>
   );

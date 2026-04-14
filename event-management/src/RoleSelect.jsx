@@ -172,7 +172,7 @@ export default function RoleSelectPage() {
           className={`px-12 py-4 rounded-xl font-bold text-base transition-all ${
             selected
               ? "bg-themeAccent text-[#0c0c0f] hover:bg-[#b8f056] hover:shadow-lg"
-              : "bg-[#1e1e22] text-[#3a3a42] cursor-not-allowed"
+              : "bg-[#1e1e22] text-textMuted cursor-not-allowed"
           }`}
         >
           Continue as{" "}

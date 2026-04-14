@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Plus, Trash2, Check, AlertCircle, Calendar, Clock, FileText, MapPin } from "lucide-react";
+import { ThemeToggle } from "./ThemeContext";
 
 const API = "http://localhost:9090";
 
@@ -40,7 +41,7 @@ const Field = ({ label, required, error, children, hint }) => (
         <label className="block text-xs font-semibold text-[#5a5a62] uppercase tracking-wider mb-2">
             {label} {required && <span className="text-[#ef4444]">*</span>}
         </label>
-        {hint && <p className="text-[10px] text-[#3a3a42] mb-1.5">{hint}</p>}
+        {hint && <p className="text-[10px] text-textMuted mb-1.5">{hint}</p>}
         {children}
         {error && (
             <p className="flex items-center gap-1 text-xs text-[#ef4444] mt-1">
@@ -52,10 +53,10 @@ const Field = ({ label, required, error, children, hint }) => (
 
 // ─── Input styles ─────────────────────────────────────────────────────────────
 const inputCls = (err) =>
-    `w-full bg-[#0c0c0f] border ${err ? "border-[#ef4444]" : "border-[#1e1e22]"} rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-[#a3e635] transition-colors placeholder-[#3a3a42]`;
+    `w-full bg-pageBg border ${err ? "border-[#ef4444]" : "border-border"} rounded-xl px-4 py-3 text-sm text-main outline-none focus:border-[#a3e635] transition-colors placeholder-[#3a3a42]`;
 
 const selectCls = (err) =>
-    `w-full bg-[#0c0c0f] border ${err ? "border-[#ef4444]" : "border-[#1e1e22]"} rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-[#a3e635] transition-colors`;
+    `w-full bg-pageBg border ${err ? "border-[#ef4444]" : "border-border"} rounded-xl px-4 py-3 text-sm text-main outline-none focus:border-[#a3e635] transition-colors`;
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const CreateEventPage = () => {
@@ -69,13 +70,14 @@ const CreateEventPage = () => {
 
     // ── Form state ────────────────────────────────────────────────────────────────
     const [form, setForm] = useState({
-        eventName: "",
-        eventStartDate: "",
-        eventEndDate: "",
-        eventTime: "",
-        eventDuration: "",
-        eventDescription: "",
-    });
+    eventName: "",
+    eventStartDate: "",
+    eventEndDate: "",
+    eventTime: "",
+    eventDuration: "",
+    eventDescription: "",
+    eventType: "Free",   // "Free" | "Paid"
+});
 
     // ── Programmes list ───────────────────────────────────────────────────────────
     const [programmes, setProgrammes] = useState([emptyProgramme()]);
@@ -95,7 +97,16 @@ const CreateEventPage = () => {
             headers: { Authorization: `Bearer ${token}` }
         })
             .then(r => r.json())
-            .then(d => { if (d.data) setOrganiser(d.data); })
+            .then(d => {
+                const raw = d.data || d;
+                if (raw) setOrganiser({
+                    ...raw,
+                    id:    raw.id    || raw.organiserId,
+                    name:  raw.name  || raw.organiserName  || "",
+                    email: raw.email || raw.organiserEmail  || "",
+                    phone: raw.phone || raw.organiserPhone  || "",
+                });
+            })
             .catch(() => setOrganiser(MOCK_ORGANISER));
 
         // GET /api/admin/venues — loads available venues for programme dropdowns
@@ -103,7 +114,14 @@ const CreateEventPage = () => {
             headers: { Authorization: `Bearer ${token}` }
         })
             .then(r => r.json())
-            .then(d => setVenues(Array.isArray(d) ? d : (d.data || MOCK_VENUES)))
+            .then(d => {
+                const list = Array.isArray(d) ? d : (d.data || []);
+                setVenues(list.length ? list.map(v => ({
+                    ...v,
+                    id:   v.id   || v.venueId,
+                    name: v.name || v.venueName,
+                })) : MOCK_VENUES);
+            })
             .catch(() => setVenues(MOCK_VENUES));
     }, []);
 
@@ -178,6 +196,7 @@ const CreateEventPage = () => {
             eventDuration: Number(form.eventDuration),
             eventDescription: form.eventDescription.trim(),
             eventStatus: "upcoming",
+            eventType: form.eventType,
 
             // Organiser auto-filled from JWT/profile — not typed by user
             organiserId: organiser.organiserId,
@@ -225,14 +244,14 @@ const CreateEventPage = () => {
     // ── Success screen ─────────────────────────────────────────────────────────────
     if (submitted) {
         return (
-            <div className="min-h-screen bg-[#0c0c0f] flex items-center justify-center px-6 font-sans">
+            <div className="min-h-screen bg-pageBg flex items-center justify-center px-6 font-sans">
                 <div className="text-center max-w-md w-full">
                     <div className="w-20 h-20 rounded-full bg-[#a3e635]/10 border-2 border-[#a3e635] flex items-center justify-center mx-auto mb-6">
                         <Check size={36} className="text-[#a3e635]" />
                     </div>
-                    <h2 className="text-3xl font-extrabold text-white mb-3">Submitted!</h2>
+                    <h2 className="text-3xl font-extrabold text-main mb-3">Submitted!</h2>
                     <p className="text-[#a0a0ab] text-sm leading-relaxed mb-2">
-                        Your event <span className="text-white font-bold">{form.eventName}</span> has been submitted successfully.
+                        Your event <span className="text-main font-bold">{form.eventName}</span> has been submitted successfully.
                     </p>
                     <p className="text-[#5a5a62] text-xs mb-8">
                         All {programmes.length} programme{programmes.length > 1 ? "s" : ""} are pending admin approval.
@@ -246,7 +265,7 @@ const CreateEventPage = () => {
                             Back to Dashboard
                         </button>
                         <button
-                            onClick={() => { setSubmitted(false); setStep(1); setForm({ eventName: "", eventStartDate: "", eventEndDate: "", eventTime: "", eventDuration: "", eventDescription: "" }); setProgrammes([emptyProgramme()]); setErrors({}); }}
+                            onClick={() => { setSubmitted(false); setStep(1); setForm({ eventName: "", eventStartDate: "", eventEndDate: "", eventTime: "", eventDuration: "", eventDescription: "", eventType: "Free" }); setProgrammes([emptyProgramme()]); setErrors({}); }}
                             className="w-full py-3 border border-[#2a2a2e] text-[#a0a0ab] font-semibold text-sm rounded-xl hover:border-[#a3e635] hover:text-[#a3e635] transition-all"
                         >
                             Create Another Event
@@ -265,13 +284,13 @@ const CreateEventPage = () => {
 
     // ── Render ────────────────────────────────────────────────────────────────────
     return (
-        <div className="min-h-screen bg-[#0c0c0f] text-white font-sans">
+        <div className="min-h-screen bg-pageBg text-main font-sans">
 
             {/* ── HEADER ─────────────────────────────────────────────────────────── */}
-            <header className="sticky top-0 z-50 flex justify-between items-center px-8 h-16 bg-[#0c0c0f]/90 backdrop-blur-md border-b border-[#1e1e22]">
+            <header className="sticky top-0 z-50 flex justify-between items-center px-8 h-16 bg-pageBg/90 backdrop-blur-md border-b border-border">
                 <button
                     onClick={() => step === 2 ? setStep(1) : navigate("/organiser")}
-                    className="flex items-center gap-2 text-[#a0a0ab] hover:text-white transition-colors"
+                    className="flex items-center gap-2 text-[#a0a0ab] hover:text-main transition-colors"
                 >
                     <ChevronLeft size={18} />
                     <span className="text-sm font-medium">{step === 2 ? "Back to Event Details" : "Back to Dashboard"}</span>
@@ -280,15 +299,17 @@ const CreateEventPage = () => {
                 <span className="font-bold text-xl tracking-tight">
                     Event<span className="text-[#a3e635]">Sphere</span>
                 </span>
-
+                <div className="flex items-center gap-4">
+                <ThemeToggle />
                 {/* Step indicator */}
-                <div className="flex items-center gap-2">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${step === 1 ? "bg-[#a3e635] text-[#0c0c0f]" : "bg-[#1e1e22] text-[#a3e635] border border-[#a3e635]"}`}>
-                        {step > 1 ? <Check size={14} /> : "1"}
-                    </div>
-                    <div className="w-8 h-px bg-[#1e1e22]" />
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${step === 2 ? "bg-[#a3e635] text-[#0c0c0f]" : "bg-[#1e1e22] text-[#5a5a62]"}`}>
-                        2
+                    <div className="flex items-center gap-2">
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${step === 1 ? "bg-[#a3e635] text-[#0c0c0f]" : "bg-[#1e1e22] text-[#a3e635] border border-[#a3e635]"}`}>
+                            {step > 1 ? <Check size={14} /> : "1"}
+                        </div>
+                        <div className="w-8 h-px bg-[#1e1e22]" />
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${step === 2 ? "bg-[#a3e635] text-[#0c0c0f]" : "bg-[#1e1e22] text-[#5a5a62]"}`}>
+                            2
+                        </div>
                     </div>
                 </div>
             </header>
@@ -296,13 +317,13 @@ const CreateEventPage = () => {
             <div className="max-w-2xl mx-auto px-6 py-10">
 
                 {/* ── ORGANISER INFO CARD (auto-fetched, read only) ──────────────────── */}
-                <div className="bg-[#111115] border border-[#1e1e22] rounded-2xl px-6 py-4 mb-8 flex items-center gap-4">
+                <div className="bg-[#111115] border border-border rounded-2xl px-6 py-4 mb-8 flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-[#a3e635]/10 border border-[#a3e635]/30 flex items-center justify-center text-[#a3e635] font-bold text-sm shrink-0">
                         {organiser.organiserName?.charAt(0) || "O"}
                     </div>
                     <div>
                         <p className="text-xs text-[#5a5a62] uppercase tracking-wider font-semibold mb-0.5">Creating as</p>
-                        <p className="font-bold text-white">{organiser.organiserName}</p>
+                        <p className="font-bold text-main">{organiser.organiserName}</p>
                         <p className="text-xs text-[#5a5a62]">{organiser.organiserEmail}</p>
                     </div>
                     <div className="ml-auto">
@@ -319,7 +340,7 @@ const CreateEventPage = () => {
                     <div>
                         <div className="mb-8">
                             <p className="text-xs font-bold uppercase tracking-widest text-[#a3e635] mb-1">Step 1 of 2</p>
-                            <h1 className="text-2xl font-extrabold text-white">Event Details</h1>
+                            <h1 className="text-2xl font-extrabold text-main">Event Details</h1>
                             <p className="text-[#5a5a62] text-sm mt-1">Fill in the core information for your event.</p>
                         </div>
 
@@ -335,7 +356,7 @@ const CreateEventPage = () => {
                                     maxLength={50}
                                     className={inputCls(errors.eventName)}
                                 />
-                                <p className="text-[10px] text-[#3a3a42] mt-1 text-right">{form.eventName.length}/50</p>
+                                <p className="text-[10px] text-textMuted mt-1 text-right">{form.eventName.length}/50</p>
                             </Field>
 
                             {/* Dates */}
@@ -407,7 +428,34 @@ const CreateEventPage = () => {
                                         className={`${inputCls(errors.eventDescription)} pl-9 resize-none`}
                                     />
                                 </div>
-                                <p className="text-[10px] text-[#3a3a42] mt-1 text-right">{form.eventDescription.length}/500</p>
+                                <p className="text-[10px] text-textMuted mt-1 text-right">{form.eventDescription.length}/500</p>
+                            </Field>
+
+                            {/* Event Type */}
+                            <Field label="Ticket Type" required hint="Will attendees need to buy tickets?">
+                                <div className="grid grid-cols-2 gap-3">
+                                    {["Free", "Paid"].map(type => (
+                                        <button
+                                            key={type}
+                                            type="button"
+                                            onClick={() => { setForm(p => ({ ...p, eventType: type })); setErrors(p => ({ ...p, eventType: "" })); }}
+                                            className={`py-3 rounded-xl text-sm font-bold border-2 transition-all ${
+                                                form.eventType === type
+                                                    ? type === "Free"
+                                                        ? "bg-[#a3e635]/10 border-[#a3e635] text-[#a3e635]"
+                                                        : "bg-[#fb923c]/10 border-[#fb923c] text-[#fb923c]"
+                                                    : "bg-pageBg border-border text-[#5a5a62] hover:border-[#3a3a42]"
+                                            }`}
+                                        >
+                                            {type === "Free" ? "🎟 Free Entry" : "💳 Paid Event"}
+                                        </button>
+                                    ))}
+                                </div>
+                                {form.eventType === "Paid" && (
+                                    <p className="text-[10px] text-[#fb923c] mt-2">
+                                        Ticket prices are assigned per programme (₹99 / ₹199 / ₹299 / ₹499) based on programme order.
+                                    </p>
+                                )}
                             </Field>
 
                             {/* Info box */}
@@ -437,15 +485,15 @@ const CreateEventPage = () => {
                     <div>
                         <div className="mb-8">
                             <p className="text-xs font-bold uppercase tracking-widest text-[#a3e635] mb-1">Step 2 of 2</p>
-                            <h1 className="text-2xl font-extrabold text-white">Add Programmes</h1>
+                            <h1 className="text-2xl font-extrabold text-main">Add Programmes</h1>
                             <p className="text-[#5a5a62] text-sm mt-1">
-                                Add the individual programmes for <span className="text-white font-semibold">{form.eventName}</span>.
+                                Add the individual programmes for <span className="text-main font-semibold">{form.eventName}</span>.
                                 Each programme has its own venue.
                             </p>
                         </div>
 
                         {/* Event summary pill */}
-                        <div className="bg-[#111115] border border-[#1e1e22] rounded-xl px-5 py-3 mb-6 flex flex-wrap gap-4 text-xs text-[#5a5a62]">
+                        <div className="bg-[#111115] border border-border rounded-xl px-5 py-3 mb-6 flex flex-wrap gap-4 text-xs text-[#5a5a62]">
                             <span className="flex items-center gap-1.5"><Calendar size={12} className="text-[#a3e635]" />{form.eventStartDate} → {form.eventEndDate}</span>
                             <span className="flex items-center gap-1.5"><Clock size={12} className="text-[#a3e635]" />{form.eventTime} · {form.eventDuration}h</span>
                             <span className="text-[#a0a0ab] font-semibold">{form.eventName}</span>
@@ -454,14 +502,14 @@ const CreateEventPage = () => {
                         {/* Programmes */}
                         <div className="space-y-5 mb-6">
                             {programmes.map((prog, idx) => (
-                                <div key={prog._key} className="bg-[#111115] border border-[#1e1e22] rounded-2xl p-6">
+                                <div key={prog._key} className="bg-[#111115] border border-border rounded-2xl p-6">
 
                                     <div className="flex items-center justify-between mb-5">
                                         <div className="flex items-center gap-2">
                                             <div className="w-6 h-6 rounded-full bg-[#a3e635] text-[#0c0c0f] text-xs font-extrabold flex items-center justify-center">
                                                 {idx + 1}
                                             </div>
-                                            <span className="font-bold text-white text-sm">Programme {idx + 1}</span>
+                                            <span className="font-bold text-main text-sm">Programme {idx + 1}</span>
                                         </div>
                                         {programmes.length > 1 && (
                                             <button
@@ -521,7 +569,7 @@ const CreateEventPage = () => {
                                                 maxLength={500}
                                                 className={`${inputCls(errors[`prog_${idx}_description`])} resize-none`}
                                             />
-                                            <p className="text-[10px] text-[#3a3a42] mt-1 text-right">{prog.description.length}/500</p>
+                                            <p className="text-[10px] text-textMuted mt-1 text-right">{prog.description.length}/500</p>
                                         </Field>
                                     </div>
                                 </div>

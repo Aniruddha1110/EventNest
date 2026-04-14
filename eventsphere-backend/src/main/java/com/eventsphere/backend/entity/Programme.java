@@ -13,8 +13,8 @@ import lombok.*;
 public class Programme
 {
     @Id
-    @Column(name = "PROGRAMME_ID", length = 10, nullable = false,
-            insertable = false, updatable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "PROGRAMME_ID")
     private String programmeId;
 
     @Column(name = "PROGRAMME_NAME", length = 50, nullable = false)

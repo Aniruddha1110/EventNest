@@ -151,26 +151,65 @@ export default function SignUpPage() {
     }
 
     setLoading(true);
-    // TODO: Call backend POST /api/auth/send-otp { email, role }
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
+
+    try {
+      // Call backend POST /api/auth/send-otp { email, role }
+      const res = await fetch("http://localhost:9090/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email.trim(), role }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setErrors({ submit: data.message || "Failed to send OTP. Please try again." });
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // Backend offline — proceed anyway for dev/demo
+    } finally {
+      setLoading(false);
+    }
+
+    // Store signup form data so VerifyOtpPage can complete registration after OTP
+    sessionStorage.setItem("signup_form", JSON.stringify({
+      fullName: form.fullName.trim(),
+      username: form.username.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      password: form.password,
+      role,
+    }));
 
     navigate(
-      `/verify-otp?email=${encodeURIComponent(form.email)}&role=${role}&mode=signup`,
+      `/verify-otp?email=${encodeURIComponent(form.email.trim())}&role=${role}&mode=signup`,
     );
   };
 
   const handleGoogleSignup = () => {
     if(role !== "user"){
-      alert("The OAuth logic authentication is only available for standard users.");
-      return;
+      alert("This feature is only available for Users!");
+       return;
     }
+   
     window.location.href = `http://localhost:9090/oauth2/authorization/google?role=${role}`;
-    // alert("Google OAuth — connect Spring Boot backend first.");
-  };
+    
+      
+  
+};
+const handleGitHubSignup = () => {
+  if(role !== "user"){
+    alert("This feature is only available for Users!");
+     return;
+  }
+  window.location.href = `http://localhost:9090/oauth2/authorization/github?role=${role}`;
+
+  
+};
 
   const inputClass = (field) =>
-    `w-full bg-pageBg border rounded-xl px-4 py-3 text-sm text-main outline-none transition-colors placeholder:text-[#3a3a42] ${
+    `w-full bg-pageBg border rounded-xl px-4 py-3 text-sm text-main outline-none transition-colors placeholder:text-textMuted ${
       errors[field]
         ? "border-[#ef4444]"
         : "border-border focus:border-[#a3e635]"
@@ -229,43 +268,48 @@ export default function SignUpPage() {
           {/* Card */}
           <div className="bg-cardBg border border-border rounded-2xl p-8">
             {/* Google button */}
-            {role === "user" && (
-              <>
-                <button
-                  onClick={handleGoogleSignup}
-                  className="w-full flex items-center justify-center gap-3 bg-white text-[#1a1a1a] font-semibold text-sm py-3.5 rounded-xl hover:bg-gray-100 transition-all mb-6"
-                >
-                <svg width="18" height="18" viewBox="0 0 18 18">
-                  <path
-                    fill="#4285F4"
-                    d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"
-                  />
-                </svg>
-                  Continue with Google
-                </button>
+            
+            <button
+              onClick={handleGoogleSignup}
+              className="w-full flex items-center justify-center gap-3 bg-white text-[#1a1a1a] font-semibold text-sm py-3.5 rounded-xl hover:bg-gray-100 transition-all mb-6"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18">
+                <path
+                  fill="#4285F4"
+                  d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"
+                />
+              </svg>
+              Continue with Google
+            </button>
+
+            <button onClick={handleGitHubSignup}
+              className="w-full flex items-center justify-center gap-3 bg-[#24292e] text-white font-semibold text-sm py-3.5 rounded-xl hover:bg-[#2f363d] transition-all mb-6">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+              </svg>
+              Continue with GitHub
+            </button>
 
             {/* Divider */}
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="flex-1 h-px bg-[#1e1e22]" />
-                  <span className="text-xs text-[#3a3a42] font-semibold uppercase tracking-wider">
-                    or fill in details
-                  </span>
-                  <div className="flex-1 h-px bg-[#1e1e22]" />
-                </div>
-              </>
-            )}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex-1 h-px bg-[#1e1e22]" />
+              <span className="text-xs text-textMuted font-semibold uppercase tracking-wider">
+                or fill in details
+              </span>
+              <div className="flex-1 h-px bg-[#1e1e22]" />
+            </div>
 
             {/* Form fields */}
             <div className="space-y-4">
@@ -282,7 +326,7 @@ export default function SignUpPage() {
                 </Field>
                 <Field label="Username" required error={errors.username}>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#3a3a42] text-sm">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-textMuted text-sm">
                       @
                     </span>
                     <input
@@ -389,7 +433,7 @@ export default function SignUpPage() {
                     ].map(({ rule, label }) => (
                       <p
                         key={label}
-                        className={`text-xs flex items-center gap-1 ${rule ? "text-themeAccent" : "text-[#3a3a42]"}`}
+                        className={`text-xs flex items-center gap-1 ${rule ? "text-themeAccent" : "text-textMuted"}`}
                       >
                         <span>{rule ? "✓" : "○"}</span> {label}
                       </p>
@@ -429,6 +473,13 @@ export default function SignUpPage() {
               </Field>
             </div>
 
+            {/* Submit error */}
+            {errors.submit && (
+              <div className="bg-[#ef4444]/10 border border-[#ef4444]/20 text-[#ef4444] px-4 py-3 rounded-xl text-sm mt-4 text-center">
+                {errors.submit}
+              </div>
+            )}
+
             {/* Submit */}
             <button
               onClick={handleSubmit}
@@ -446,7 +497,7 @@ export default function SignUpPage() {
             </button>
 
             {/* Terms */}
-            <p className="text-xs text-[#3a3a42] text-center mt-4 leading-relaxed">
+            <p className="text-xs text-textMuted text-center mt-4 leading-relaxed">
               By continuing, you agree to our{" "}
               <span className="text-themeAccent cursor-pointer hover:underline">
                 Terms of Service

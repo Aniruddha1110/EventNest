@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
-
-// Client ID (OAuth) = 564476414065-vln380j3vp2n4g25f899q98pomedptcj.apps.googleusercontent.com
-
 // ─── Auth pages are intentionally always dark ─────────────────────────────────
 const API = "http://localhost:9090";
 
@@ -43,6 +40,12 @@ const GoogleIcon = () => (
     <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
     <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/>
     <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
+  </svg>
+);
+
+const GitHubIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
   </svg>
 );
 
@@ -103,16 +106,28 @@ export default function LoginPage() {
         body:    JSON.stringify({ role, loginMode, identifier: identifier.trim(), password }),
       });
       
-      const data = await res.json();
+      const json = await res.json();
 
       if (!res.ok) {
-        setError(data.message || "Invalid credentials. Please try again.");
+        setError(json.message || "Invalid credentials. Please try again.");
         setLoading(false);
         return;
       }
 
+      // Backend wraps AuthResponse inside ApiResponse { success, message, data }
+      const data = json.data;
+      // Normalise role to lowercase (backend may return "ADMIN", "USER", etc.)
+      if (data.role) {
+        let cleanRole = data.role.toLowerCase().replace("role_", "");
+        data.role = cleanRole;
+      }
       saveSession(data);
-      navigate(ROLES[data.role]?.dashboard || cfg.dashboard);
+      const targetDashboard = ROLES[data.role]?.dashboard || cfg.dashboard;
+      console.log("Backend Role:", data.role);
+      console.log("Mapped Dashboard:", ROLES[data.role]?.dashboard);
+      console.log("Fallback Dashboard (cfg):", cfg.dashboard);
+
+      navigate(targetDashboard)
     } catch (err) {
       // 🛑 The real error is caught here now instead of hiding behind a mock session
       console.error("Backend Request Failed:", err);
@@ -123,17 +138,19 @@ export default function LoginPage() {
   };
 
   // ── Google OAuth ──────────────────────────────────────────────────────────
+
   const handleGoogleLogin = () => {
-    // `${API}/oauth2/authorization/google?role=${role}`
-    window.location.href =`http://localhost:9090/oauth2/authorization/google?role=${role}` ;
-    // setError("Google OAuth requires the backend to be running. Use username/email login instead.");
-  };
+  window.location.href = `${API}/oauth2/authorization/google`;
+};
+const handleGitHubLogin = () => {
+  window.location.href = `${API}/oauth2/authorization/github`;
+};
 
   const handleKeyDown = (e) => { if (e.key === "Enter") handleLogin(); };
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0c0c0f] text-white flex flex-col">
+    <div className="min-h-screen bg-pageBg text-white flex flex-col">
 
       {/* ── HEADER ──────────────────────────────────────────────────────── */}
       <header className="flex items-center justify-between px-12 h-16 border-b border-[#1e1e22]">
@@ -163,7 +180,7 @@ export default function LoginPage() {
                 onClick={() => { setRole(key); setError(""); setIdentifier(""); }}
                 className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all
                   ${role === key
-                    ? `bg-[#0c0c0f] ${r.color} border ${r.border} shadow-sm`
+                    ? `bg-pageBg ${r.color} border ${r.border} shadow-sm`
                     : "text-[#5a5a62] hover:text-[#a0a0ab]"}`}>
                 {r.label}
               </button>
@@ -181,16 +198,20 @@ export default function LoginPage() {
                   <GoogleIcon />
                   Continue with Google
                 </button>
+                <button onClick={handleGitHubLogin}
+                  className="w-full flex items-center justify-center gap-3 bg-[#24292e] text-white font-semibold text-sm py-3.5 rounded-xl hover:bg-[#2f363d] transition-all mb-5">
+                  <GitHubIcon /> Continue with GitHub
+                </button>
                 <div className="flex items-center gap-4 mb-5">
                   <div className="flex-1 h-px bg-[#1e1e22]" />
-                  <span className="text-xs text-[#3a3a42] font-semibold uppercase tracking-wider">or</span>
+                  <span className="text-xs text-textMuted font-semibold uppercase tracking-wider">or</span>
                   <div className="flex-1 h-px bg-[#1e1e22]" />
                 </div>
               </>
             )}
 
             {/* Login mode toggle */}
-            <div className="flex gap-1 mb-5 p-1 bg-[#0c0c0f] border border-[#1e1e22] rounded-xl">
+            <div className="flex gap-1 mb-5 p-1 bg-pageBg border border-[#1e1e22] rounded-xl">
               {["username", "email"].map((m) => (
                 <button key={m}
                   onClick={() => { setLoginMode(m); setIdentifier(""); setError(""); }}
@@ -219,7 +240,7 @@ export default function LoginPage() {
                 value={identifier}
                 onChange={(e) => { setIdentifier(e.target.value); setError(""); }}
                 onKeyDown={handleKeyDown}
-                className="w-full bg-[#0c0c0f] border border-[#1e1e22] rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-[#a3e635] transition-colors placeholder:text-[#3a3a42]"
+                className="w-full bg-pageBg border border-[#1e1e22] rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-[#a3e635] transition-colors placeholder:text-textMuted"
               />
             </div>
 
@@ -239,7 +260,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setError(""); }}
                   onKeyDown={handleKeyDown}
-                  className="w-full bg-[#0c0c0f] border border-[#1e1e22] rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-[#a3e635] transition-colors placeholder:text-[#3a3a42] pr-12"
+                  className="w-full bg-pageBg border border-[#1e1e22] rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-[#a3e635] transition-colors placeholder:text-textMuted pr-12"
                 />
                 <button type="button" onClick={() => setShowPw((p) => !p)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-[#5a5a62] hover:text-[#a0a0ab] transition-colors">
@@ -261,7 +282,7 @@ export default function LoginPage() {
               )}
             </button>
 
-            <p className="text-xs text-[#3a3a42] text-center mt-5">
+            <p className="text-xs text-textMuted text-center mt-5">
               Signing in as{" "}
               <span className={`font-bold px-2 py-0.5 rounded-full border text-xs uppercase tracking-wider ${cfg.badge}`}>
                 {cfg.label}

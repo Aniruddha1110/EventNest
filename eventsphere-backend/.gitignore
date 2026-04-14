@@ -3,8 +3,6 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-!**/logs/*.log
-!**/logs/*.log.**
 
 ### STS ###
 .apt_generated
@@ -15,8 +13,6 @@ target/
 .springBeans
 .sts4-cache
 *.log
-
-
 
 ### IntelliJ IDEA ###
 .idea
@@ -34,6 +30,11 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-
 ### VS Code ###
 .vscode/
+
+### Logs ###
+logs/
+
+### Application Properties (contains secrets) ###
+src/main/resources/application.properties

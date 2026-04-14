@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   CreditCard,
 } from "lucide-react";
+import { ThemeToggle } from "./ThemeContext";
 
 const generateTicketId = (eventId) => {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -31,6 +32,7 @@ const BOOKING_TIME = new Date().toLocaleTimeString("en-IN", {
   minute: "2-digit",
 });
 
+// QR is always black/white — intentional, must stay readable when printed
 const QRPlaceholder = ({ value }) => (
   <div className="w-20 h-20 bg-black p-1.5 flex-shrink-0">
     <svg viewBox="0 0 10 10" className="w-full h-full">
@@ -39,31 +41,24 @@ const QRPlaceholder = ({ value }) => (
         y: Math.floor(i / 10),
         fill: Math.random() > 0.45 ? "white" : "black",
       })).map((cell, i) => (
-        <rect
-          key={i}
-          x={cell.x}
-          y={cell.y}
-          width={1}
-          height={1}
-          fill={cell.fill}
-        />
+        <rect key={i} x={cell.x} y={cell.y} width={1} height={1} fill={cell.fill} />
       ))}
     </svg>
-    <p className="text-[5px] text-main text-center font-mono truncate mt-0.5">
+    <p className="text-[5px] text-white text-center font-mono truncate mt-0.5">
       {value.slice(-8)}
     </p>
   </div>
 );
 
 const TicketPage = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate  = useNavigate();
+  const location  = useLocation();
 
   const {
     event,
     selectedProgrammes = [],
-    totalPrice = 0,
-    isFree = false,
+    totalPrice  = 0,
+    isFree      = false,
     paymentMethod = null,
   } = location.state || {};
 
@@ -72,15 +67,13 @@ const TicketPage = () => {
     return null;
   }
 
-  const ticketId = generateTicketId(event.id);
-  const userName = "Aniruddha Dutta";
-  const userEmail = "ishaananiruddha10@gmail.com";
+  const ticketId  = generateTicketId(event.id);
+  const userName  = localStorage.getItem("name")  || "Attendee";
+  const userEmail = localStorage.getItem("email") || "";
 
   const formatDate = (d) =>
     new Date(d).toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
+      day: "numeric", month: "long", year: "numeric",
     });
 
   const handleDownload = () => {
@@ -92,127 +85,109 @@ const TicketPage = () => {
   };
 
   const methodLabel =
-    {
-      card: "Credit / Debit Card",
-      netbanking: "Net Banking",
-      upi: "UPI",
-    }[paymentMethod] || (isFree ? "Free Entry" : "Online Payment");
+    { card: "Credit / Debit Card", netbanking: "Net Banking", upi: "UPI" }[paymentMethod] ||
+    (isFree ? "Free Entry" : "Online Payment");
 
   return (
-    <div className="min-h-screen bg-[#F9F9F9] font-sans selection:bg-lime-200">
-      {/* Nav */}
+    <div className="min-h-screen bg-background font-sans selection:bg-lime-200">
+
+      {/* ── Nav ── */}
       <nav className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center no-print">
+
+        {/* Logo — two-tone, matches LandingPage */}
         <button
           onClick={() => navigate("/events")}
-          className="bg-black text-main text-sm font-bold px-3 py-1.5 tracking-wide hover:opacity-90 transition"
+          className="text-lg font-bold tracking-tight hover:opacity-80 transition"
         >
-          EventSphere
+          <span className="text-foreground">Event</span>
+          <span className="text-[#C4F249]">Sphere</span>
         </button>
-        <button
-          onClick={() => navigate(`/events/${event.id}`)}
-          className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-black transition"
-        >
-          <ArrowLeft size={16} /> Back to Event
-        </button>
+
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          <button
+            onClick={() => navigate(`/events/${event.id}`)}
+            className="flex items-center gap-1.5 text-sm font-medium text-muted hover:text-foreground transition"
+          >
+            <ArrowLeft size={16} /> Back to Event
+          </button>
+        </div>
       </nav>
 
       <div className="max-w-3xl mx-auto px-6 pb-20">
-        {/* Success header */}
+
+        {/* ── Success header ── */}
         <div className="text-center py-10 no-print">
           <CheckCircle size={56} className="mx-auto text-[#C4F249] mb-4" />
-          <h1 className="text-4xl font-bold text-black mb-2">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
             {isFree ? "You're Registered!" : "Booking Confirmed!"}
           </h1>
-          <p className="text-gray-500 text-sm">
+          <p className="text-muted text-sm">
             {isFree
               ? "Your free ticket is ready. Show it at the entrance."
               : `₹${totalPrice} paid via ${methodLabel}. Your ticket is ready.`}
           </p>
         </div>
 
-        {/* Ticket */}
+        {/* ── Ticket (print area — kept black/white intentionally for printing) ── */}
         <div id="ticket-print-area">
           <div className="bg-white border-2 border-black overflow-hidden">
+
             {/* Header */}
-            <div className="bg-black text-main px-8 py-6 flex justify-between items-start gap-4">
+            <div className="bg-black text-white px-8 py-6 flex justify-between items-start gap-4">
               <div>
                 <p className="text-xs font-bold tracking-widest text-[#C4F249] uppercase mb-1">
                   EventSphere · Official Ticket
                 </p>
-                <h2 className="text-3xl font-bold leading-tight">
+                <h2 className="text-3xl font-bold leading-tight text-white">
                   {event.name}
                 </h2>
                 <div className="flex items-center gap-3 mt-2 flex-wrap">
-                  <span
-                    className={`text-xs font-bold px-2 py-0.5 ${isFree ? "bg-[#C4F249] text-black" : "bg-white text-black"}`}
-                  >
+                  <span className={`text-xs font-bold px-2 py-0.5 ${isFree ? "bg-[#C4F249] text-black" : "bg-white text-black"}`}>
                     {isFree ? "FREE" : "PAID"}
                   </span>
-                  <span className="text-gray-400 text-xs font-mono">
-                    {ticketId}
-                  </span>
+                  <span className="text-gray-400 text-xs font-mono">{ticketId}</span>
                 </div>
               </div>
               <QRPlaceholder value={ticketId} />
             </div>
 
             {/* Tear line */}
-            <div className="flex items-center px-4">
-              <div className="w-6 h-6 rounded-full bg-[#F9F9F9] border-2 border-black -ml-7" />
+            <div className="flex items-center px-4 bg-white">
+              <div className="w-6 h-6 rounded-full bg-gray-100 border-2 border-black -ml-7" />
               <div className="flex-1 border-t-2 border-dashed border-gray-300 mx-2" />
-              <div className="w-6 h-6 rounded-full bg-[#F9F9F9] border-2 border-black -mr-7" />
+              <div className="w-6 h-6 rounded-full bg-gray-100 border-2 border-black -mr-7" />
             </div>
 
             {/* Body */}
-            <div className="px-8 py-6 space-y-6">
+            <div className="px-8 py-6 space-y-6 bg-white">
+
               {/* Attendee */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">
-                    Attendee
-                  </p>
+                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Attendee</p>
                   <p className="font-bold text-black">{userName}</p>
                   <p className="text-sm text-gray-500">{userEmail}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">
-                    Booked on
-                  </p>
+                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Booked on</p>
                   <p className="font-bold text-black">{BOOKING_DATE}</p>
                   <p className="text-sm text-gray-500">{BOOKING_TIME}</p>
                 </div>
               </div>
 
-              {/* Event info */}
+              {/* Event info grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  {
-                    label: "Start",
-                    value: formatDate(event.startDate),
-                    icon: <Calendar size={13} />,
-                  },
-                  {
-                    label: "End",
-                    value: formatDate(event.endDate),
-                    icon: <Calendar size={13} />,
-                  },
-                  {
-                    label: "Time",
-                    value: event.time,
-                    icon: <Clock size={13} />,
-                  },
-                  {
-                    label: "Organiser",
-                    value: event.organiserName,
-                    icon: <Tag size={13} />,
-                  },
+                  { label: "Start",     value: formatDate(event.startDate), icon: <Calendar size={13} /> },
+                  { label: "End",       value: formatDate(event.endDate),   icon: <Calendar size={13} /> },
+                  { label: "Time",      value: event.time,                  icon: <Clock    size={13} /> },
+                  { label: "Organiser", value: event.organiserName,         icon: <Tag      size={13} /> },
                 ].map(({ label, value, icon }) => (
                   <div key={label} className="bg-gray-50 p-3">
                     <div className="flex items-center gap-1 text-gray-400 mb-1">
                       {icon}
-                      <span className="text-xs font-semibold uppercase tracking-wide">
-                        {label}
-                      </span>
+                      <span className="text-xs font-semibold uppercase tracking-wide">{label}</span>
                     </div>
                     <p className="text-sm font-bold text-black">{value}</p>
                   </div>
@@ -235,17 +210,13 @@ const TicketPage = () => {
                           {idx + 1}
                         </div>
                         <div>
-                          <p className="font-bold text-black text-sm">
-                            {prog.name}
-                          </p>
+                          <p className="font-bold text-black text-sm">{prog.name}</p>
                           <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
                             <span className="flex items-center gap-1">
-                              <MapPin size={11} />
-                              {prog.venueName}
+                              <MapPin size={11} /> {prog.venueName}
                             </span>
                             <span className="flex items-center gap-1">
-                              <Users size={11} />
-                              Cap. {prog.venueCapacity.toLocaleString()}
+                              <Users size={11} /> Cap. {prog.venueCapacity.toLocaleString()}
                             </span>
                           </div>
                         </div>
@@ -260,17 +231,15 @@ const TicketPage = () => {
             </div>
 
             {/* Tear line */}
-            <div className="flex items-center px-4">
-              <div className="w-6 h-6 rounded-full bg-[#F9F9F9] border-2 border-black -ml-7" />
+            <div className="flex items-center px-4 bg-white">
+              <div className="w-6 h-6 rounded-full bg-gray-100 border-2 border-black -ml-7" />
               <div className="flex-1 border-t-2 border-dashed border-gray-300 mx-2" />
-              <div className="w-6 h-6 rounded-full bg-[#F9F9F9] border-2 border-black -mr-7" />
+              <div className="w-6 h-6 rounded-full bg-gray-100 border-2 border-black -mr-7" />
             </div>
 
             {/* Receipt */}
             <div className="px-8 py-5 bg-gray-50">
-              <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-3">
-                Receipt
-              </p>
+              <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-3">Receipt</p>
               <div className="space-y-1">
                 {selectedProgrammes.map((p) => (
                   <div key={p.id} className="flex justify-between text-sm">
@@ -295,9 +264,7 @@ const TicketPage = () => {
               <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-gray-400">Ticket ID</p>
-                  <p className="font-mono font-bold text-black text-sm">
-                    {ticketId}
-                  </p>
+                  <p className="font-mono font-bold text-black text-sm">{ticketId}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Payment Method</p>
@@ -308,32 +275,31 @@ const TicketPage = () => {
               </div>
 
               <p className="text-xs text-gray-400 mt-3">
-                Show this ticket (digital or printed) at the entrance of each
-                programme venue.
+                Show this ticket (digital or printed) at the entrance of each programme venue.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Action buttons */}
+        {/* ── Action buttons ── */}
         <div className="flex flex-col sm:flex-row gap-4 mt-8 no-print">
           <button
             onClick={handleDownload}
-            className="flex-1 flex items-center justify-center gap-2 bg-black text-[#C4F249] py-4 font-bold text-base hover:opacity-80 transition active:scale-95"
+            className="flex-1 flex items-center justify-center gap-2 bg-foreground text-[#C4F249] py-4 font-bold text-base hover:opacity-80 transition active:scale-95"
           >
             <Download size={18} /> Download / Print Ticket
           </button>
           <button
             onClick={() => navigate("/events")}
-            className="flex-1 py-4 font-bold text-base border-2 border-black text-black hover:bg-black hover:text-[#C4F249] transition active:scale-95"
+            className="flex-1 py-4 font-bold text-base border-2 border-foreground text-foreground hover:bg-foreground hover:text-[#C4F249] transition active:scale-95"
           >
             Browse More Events
           </button>
         </div>
 
-        {/* Steps */}
-        <div className="mt-8 bg-white border border-gray-100 p-6 no-print">
-          <h3 className="font-bold text-black mb-4">What happens next?</h3>
+        {/* ── What happens next ── */}
+        <div className="mt-8 bg-surface border border-border p-6 no-print">
+          <h3 className="font-bold text-foreground mb-4">What happens next?</h3>
           <div className="space-y-3">
             {[
               "Save or print your ticket using the button above.",
@@ -345,11 +311,12 @@ const TicketPage = () => {
                 <div className="w-6 h-6 bg-[#C4F249] text-black text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                   {i + 1}
                 </div>
-                <p className="text-sm text-gray-600">{text}</p>
+                <p className="text-sm text-muted">{text}</p>
               </div>
             ))}
           </div>
         </div>
+
       </div>
     </div>
   );

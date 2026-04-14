@@ -1,37 +1,92 @@
-import ProfilePageLayout from "./ProfilePageLayout";
+// import ProfilePageLayout from "./ProfilePageLayout";
 
 // ─── USER DATA ───────────────────────────────────────────────────────────────
 // Replace with real backend data when integrating
-const currentUser = {
-  name: "Alex Johnson",
-  username: "@alexj_events",
-  role: "user", // ← always "user" here
-  phone: "+91 98765 43210",
-  email: "alex.johnson@example.com",
-};
+// currentUser is now loaded from localStorage (set on login) + API
+// Static fallback used if not logged in
+// const _lsName  = localStorage.getItem("name")  || "Alex Johnson";
+// const _lsEmail = localStorage.getItem("email") || "alex.johnson@example.com";
+// const currentUser = {
+//   name:     _lsName,
+//   username: "@" + (_lsName.toLowerCase().replace(/\s+/g, "_")),
+//   role:     localStorage.getItem("role")   || "user",
+//   phone:    "",   // fetched below
+//   email:    _lsEmail,
+// };
 
-const TICKETS = [
-  {
-    id: "TKT-001",
-    event: "Tech Innovators Conference",
-    date: "Feb 20, 2026",
-    price: "₹1,499",
-    priceType: "PAID",
-    status: "upcoming",
-  },
-  {
-    id: "TKT-002",
-    event: "Global Culture Fest - Day 1",
-    date: "Feb 10, 2026",
-    price: "₹0",
-    priceType: "FREE",
-    status: "attended",
-  },
-];
+import { useState, useEffect } from "react";
+import ProfilePageLayout from "./ProfilePageLayout";
+import TicketHistory from "./TicketHistory";
 
-const UserProfilePage = () => (
-  <ProfilePageLayout user={currentUser}>
-    {/* ── TICKETS & HISTORY ─────────────────────────────────────── */}
+// const TICKETS = [
+//   {
+//     id: "TKT-001",
+//     event: "Tech Innovators Conference",
+//     date: "Feb 20, 2026",
+//     price: "₹1,499",
+//     priceType: "PAID",
+//     status: "upcoming",
+//   },
+//   {
+//     id: "TKT-002",
+//     event: "Global Culture Fest - Day 1",
+//     date: "Feb 10, 2026",
+//     price: "₹0",
+//     priceType: "FREE",
+//     status: "attended",
+//   },
+// ];
+
+const UserProfilePage = () => {
+  const [currentUser, setCurrentUser] = useState({
+    name:     "",
+    username: "",
+    role:     localStorage.getItem("role") || "user",
+    phone:    "",
+    email:    "",
+  });
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    fetch("http://localhost:9090/api/users/profile", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(json => {
+        // json.data is the UserResponse object
+        const u = json.data;
+        if (!u) return;
+        const fullName = `${u.userFirstName} ${u.userLastName}`;
+        // Update localStorage so other pages stay in sync
+        localStorage.setItem("name",  fullName);
+        localStorage.setItem("email", u.userEmail);
+        setCurrentUser({
+          name:     fullName,
+          username: "@" + u.userUsername,
+          role:     localStorage.getItem("role") || "user",
+          phone:    u.userPhoneNo || "",
+          email:    u.userEmail,
+        });
+      })
+      .catch(() => {
+        // Fallback to localStorage if backend offline
+        const lsName  = localStorage.getItem("name")  || "User";
+        const lsEmail = localStorage.getItem("email") || "";
+        setCurrentUser({
+          name:     lsName,
+          username: "@" + lsName.toLowerCase().replace(/\s+/g, "_"),
+          role:     localStorage.getItem("role") || "user",
+          phone:    "",
+          email:    lsEmail,
+        });
+      });
+  }, []);
+
+  return (
+    <ProfilePageLayout user={currentUser}>
+    {/* ── TICKETS & HISTORY ───────────────────────────────────────
     <div className="flex items-center justify-between mb-6">
       <h1 className="text-2xl font-extrabold tracking-tight text-main">
         Your Tickets <span className="text-themeAccent">&</span> History
@@ -51,7 +106,7 @@ const UserProfilePage = () => (
               : "border-border hover:border-[#a3e635]/20"
           }`}
         >
-          <div className="w-14 h-14 rounded-xl bg-[#1e1e22] border border-themeBorder flex items-center justify-center flex-shrink-0">
+          <div className="w-14 h-14 rounded-xl bg-pageBg border border-border flex items-center justify-center flex-shrink-0">
             <span className="text-xs font-extrabold text-themeAccent tracking-wider">
               TKT
             </span>
@@ -69,7 +124,7 @@ const UserProfilePage = () => (
               className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full ${
                 ticket.status === "upcoming"
                   ? "bg-themeAccent text-[#0c0c0f]"
-                  : "bg-[#1e1e22] text-muted border border-themeBorder"
+                  : "bg-pageBg text-muted border border-themeBorder"
               }`}
             >
               {ticket.status === "upcoming" ? "Upcoming" : "Attended"}
@@ -78,15 +133,17 @@ const UserProfilePage = () => (
               <p className="text-base font-extrabold text-main">
                 {ticket.price}
               </p>
-              <p className="text-[10px] text-[#3a3a42] uppercase tracking-wider">
+              <p className="text-[10px] text-textMuted uppercase tracking-wider">
                 {ticket.priceType}
               </p>
             </div>
           </div>
         </div>
       ))}
-    </div>
+    </div> */}
+    <TicketHistory />
   </ProfilePageLayout>
 );
+};
 
 export default UserProfilePage;

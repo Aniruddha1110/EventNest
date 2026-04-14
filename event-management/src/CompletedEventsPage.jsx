@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import { MOCK_EVENTS } from "./mockData";
+import { ThemeToggle } from "./ThemeContext";
 
 const API = "http://localhost:9090";
 const PER_PAGE = 9;
@@ -20,18 +21,60 @@ const CompletedEventsPage = () => {
   const [page, setPage] = useState(1);
   const [backendOnline, setBackendOnline] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(`${API}/api/events?status=completed`);
-        if (!res.ok) throw new Error();
-        setEvents(await res.json());
-        setBackendOnline(true);
-      } catch {
-        setEvents(MOCK_EVENTS.filter((e) => e.status === "completed"));
+  // CompletedEventsPage.jsx
+
+useEffect(() => {
+  const fetchCompletedEvents = async () => {
+    try {
+      // 1. Retrieve the JWT token
+      const token = localStorage.getItem("token");
+      
+      // 2. Add Authorization header to the fetch call
+      const res = await fetch(`${API}/api/events?status=completed`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server responded with ${res.status}`);
       }
-    })();
-  }, []);
+
+      const json = await res.json();
+
+      // 3. Map Backend EventResponse to Frontend State
+      // json.data contains the list of EventResponse objects
+      const mapped = (json.data || []).map(e => ({
+        id:          e.eventId,
+        name:        e.eventName,
+        startDate:   e.eventStartDate,
+        endDate:     e.eventEndDate,
+        time:        e.eventTime,
+        duration:    e.eventDuration,
+        description: e.eventDescription,
+        status:      e.eventStatus,
+        type:        e.eventType,
+        category:    e.category,
+        organiserName: (e.programmes && e.programmes[0]?.organiserName) || "—", // Added mapping for organiserName
+        programmes:  e.programmes || [],
+        feedbacks:   e.feedbacks  || [],
+      }));
+
+      setEvents(mapped);
+      setBackendOnline(true);
+    } catch (err) {
+      console.error("Backend fetch failed:", err);
+      setBackendOnline(false);
+      
+      // Optional: Only fallback to mock data if the backend is actually unreachable
+      // Otherwise, keep the events list empty to show "No events found"
+      // setEvents(MOCK_EVENTS.filter(e => e.status === "completed"));
+    }
+  };
+
+  fetchCompletedEvents();
+}, []);
 
   const totalPages = Math.max(1, Math.ceil(events.length / PER_PAGE));
   const pageEvents = events.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -72,7 +115,7 @@ const CompletedEventsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F9F9] font-sans selection:bg-lime-200">
+    <div className="min-h-screen bg-background font-sans selection:bg-lime-200">
       {/* Nav */}
       <nav className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
         <button
@@ -81,12 +124,15 @@ const CompletedEventsPage = () => {
         >
           EventSphere
         </button>
-        <button
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          <button
           onClick={() => navigate("/events")}
           className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-black transition"
         >
           <ArrowLeft size={15} /> All Events
         </button>
+        </div>
       </nav>
 
       {/* Hero */}

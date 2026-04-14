@@ -13,8 +13,8 @@ import lombok.*;
 public class Organiser
 {
     @Id
-    @Column(name = "ORGANISER_ID", length = 10, nullable = false,
-            insertable = false, updatable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ORGANISER_ID")
     private String organiserId;
 
     @Column(name = "ORGANISER_NAME", length = 50, nullable = false)

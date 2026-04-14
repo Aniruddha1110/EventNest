@@ -560,19 +560,19 @@ export default function LandingPage() {
         <div className="flex items-center gap-6">
           <Link
             to="/user"
-            className="text-sm text-[#3a3a42] hover:text-themeAccent transition-colors"
+            className="text-sm text-textMuted hover:text-themeAccent transition-colors"
           >
             User
           </Link>
           <Link
             to="/organiser"
-            className="text-sm text-[#3a3a42] hover:text-themeAccent transition-colors"
+            className="text-sm text-textMuted hover:text-themeAccent transition-colors"
           >
             Organiser
           </Link>
           <Link
             to="/admin"
-            className="text-sm text-[#3a3a42] hover:text-themeAccent transition-colors"
+            className="text-sm text-textMuted hover:text-themeAccent transition-colors"
           >
             Admin
           </Link>

@@ -13,8 +13,8 @@ import lombok.*;
 public class Venue
 {
     @Id
-    @Column(name = "VENUE_ID", length = 10, nullable = false,
-            insertable = false, updatable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "VENUE_ID")
     private String venueId;
 
     @Column(name = "VENUE_NAME", length = 50)

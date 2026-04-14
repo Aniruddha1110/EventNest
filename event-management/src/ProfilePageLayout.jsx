@@ -22,7 +22,10 @@ const ProfilePageLayout = ({ user, children }) => {
   const [errorMessage, setErrorMessage] = useState("");
 
   // ── Handlers ────────────────────────────────────────────────────────────
-  const handleLogout = () => navigate("/");
+  const handleLogout = () => {
+  localStorage.removeItem("token");
+  navigate("/");
+};
 
   const handleFeedback = () => {
     window.location.href =
@@ -36,32 +39,90 @@ const ProfilePageLayout = ({ user, children }) => {
     else navigate("/admin");
   };
 
-  const handleVerifyOTP = () => {
-    if (otp === "1234") {
-      setErrorMessage("");
-      setModalStep(2);
-    } else {
-      setErrorMessage("Incorrect OTP. Please try again with 1234.");
-    }
-  };
+  // const handleVerifyOTP = () => {
+  //   if (otp === "1234") {
+  //     setErrorMessage("");
+  //     setModalStep(2);
+  //   } else {
+  //     setErrorMessage("Incorrect OTP. Please try again with 1234.");
+  //   }
+  // };
 
-  const handleSaveNewPassword = () => {
-    if (newPassword.length < 6) {
-      setErrorMessage("Password must be greater than 6 characters!");
+  const handleVerifyOTP = async () => {
+  if (otp.length < 6) {
+    setErrorMessage("Please enter the complete 6-digit OTP.");
+    return;
+  }
+  setErrorMessage("");
+  try {
+    const res = await fetch("http://localhost:9090/api/auth/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: user?.email, otp, role: user?.role || "user" }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      setErrorMessage(json.message || "Incorrect OTP. Please try again.");
       return;
     }
-    if (newPassword !== confirmPassword) {
-      setErrorMessage("Passwords do not match!");
+    setModalStep(2);
+  } catch {
+    setErrorMessage("Backend offline. Cannot verify OTP.");
+  }
+};
+
+  // const handleSaveNewPassword = () => {
+  //   if (newPassword.length < 6) {
+  //     setErrorMessage("Password must be greater than 6 characters!");
+  //     return;
+  //   }
+  //   if (newPassword !== confirmPassword) {
+  //     setErrorMessage("Passwords do not match!");
+  //     return;
+  //   }
+  //   setErrorMessage("");
+  //   alert("Password has been successfully changed!");
+  //   setOtp("");
+  //   setNewPassword("");
+  //   setConfirmPassword("");
+  //   setModalStep(1);
+  //   setIsModalOpen(false);
+  // };
+
+  const handleSaveNewPassword = async () => {
+  if (newPassword.length < 8) {
+    setErrorMessage("Password must be at least 8 characters!");
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    setErrorMessage("Passwords do not match!");
+    return;
+  }
+  setErrorMessage("");
+  try {
+    const res = await fetch("http://localhost:9090/api/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email:       user?.email,
+        otp,
+        newPassword,
+        role:        user?.role || "user",
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      setErrorMessage(json.message || "Failed to reset password.");
       return;
     }
-    setErrorMessage("");
-    alert("Password has been successfully changed!");
-    setOtp("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setModalStep(1);
-    setIsModalOpen(false);
-  };
+    alert("Password changed successfully! Please log in again.");
+    localStorage.removeItem("token");
+    closeModal();
+    navigate("/login");
+  } catch {
+    setErrorMessage("Backend offline. Cannot reset password.");
+  }
+};
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -108,7 +169,7 @@ const ProfilePageLayout = ({ user, children }) => {
           {/* Profile info card */}
           <div className="bg-cardBg border border-[#a3e635]/20 rounded-2xl p-6">
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-[#1e1e22] border border-themeBorder flex items-center justify-center text-2xl font-extrabold text-themeAccent">
+              <div className="w-14 h-14 rounded-2xl bg-pageBg border border-border flex items-center justify-center text-2xl font-extrabold text-themeAccent">
                 {user?.name?.charAt(0) || "U"}
               </div>
               <div>
@@ -126,13 +187,13 @@ const ProfilePageLayout = ({ user, children }) => {
 
             <div className="space-y-4 border-t border-border pt-5">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#3a3a42] mb-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-textMuted mb-1">
                   Phone Number
                 </p>
                 <p className="text-sm text-main font-medium">{user?.phone}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#3a3a42] mb-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-textMuted mb-1">
                   Email
                 </p>
                 <p className="text-sm text-main font-medium">{user?.email}</p>
@@ -149,7 +210,17 @@ const ProfilePageLayout = ({ user, children }) => {
               💡 Provide Feedback
             </button>
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={async () => {
+                setIsModalOpen(true);
+                  // Send OTP to backend as soon as modal opens
+                  try {
+                    await fetch("http://localhost:9090/api/auth/forgot-password", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ email: user?.email, role: user?.role || "user" }),
+                    });
+                  } catch { /* silent — user sees the modal, OTP sending attempted */ }
+                }}
               className="w-full flex items-center gap-3 px-5 py-4 text-sm font-medium text-textMuted hover:text-[#818cf8] hover:bg-[#1e1e22] border-b border-border transition-all text-left"
             >
               🔒 Forgot Password?
@@ -194,13 +265,13 @@ const ProfilePageLayout = ({ user, children }) => {
                   Enter OTP
                 </h3>
                 <p className="text-sm text-muted mb-6">
-                  We've sent a 4-digit OTP to your registered number:{" "}
-                  <span className="font-bold text-main">{user?.phone}</span>
-                </p>
-                <input
+                  We've sent a 6-digit OTP to your registered email:{" "}
+                  <span className="font-bold text-main">{user?.email}</span>
+                  </p>
+                  <input
                   type="text"
-                  placeholder="- - - -"
-                  maxLength={4}
+                  placeholder="- - - - - -"
+                  maxLength={6}
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                   className="w-full bg-pageBg border border-border rounded-xl px-4 py-4 text-center text-2xl font-extrabold tracking-widest text-main outline-none focus:border-[#a3e635] transition-colors mb-5"

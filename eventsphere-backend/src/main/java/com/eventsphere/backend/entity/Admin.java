@@ -3,6 +3,7 @@ package com.eventsphere.backend.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDateTime;
 
@@ -16,8 +17,8 @@ import java.time.LocalDateTime;
 public class Admin {
 
     @Id
-    @Column(name = "ADMIN_ID", length = 10, nullable = false,
-            insertable = false, updatable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ADMIN_ID")
     private String adminId;
 
     @Column(name = "ADMIN_USERNAME", length = 50, nullable = false, unique = true)

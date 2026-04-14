@@ -16,8 +16,8 @@ import java.util.List;
 public class Event
 {
     @Id
-    @Column(name = "EVENT_ID", length = 5, nullable = false,
-            insertable = false, updatable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "EVENT_ID")
     private String eventId;
 
     @Column(name = "EVENT_NAME", length = 50, nullable = false)

@@ -12,11 +12,14 @@ import axios from "axios";
 
 // ─── MOCK DATA & CONSTANTS ───────────────────────────────────────────────────
 const CATEGORY_COLORS_MAP = {
+  Technical:  "text-[#818cf8] bg-[#818cf8]/10 border-[#818cf8]/20",
   Technology: "text-[#818cf8] bg-[#818cf8]/10 border-[#818cf8]/20",
-  Cultural: "text-[#f472b6] bg-[#f472b6]/10 border-[#f472b6]/20",
-  Music: "text-[#f472b6] bg-[#f472b6]/10 border-[#f472b6]/20",
-  Business: "text-[#fb923c] bg-[#fb923c]/10 border-[#fb923c]/20",
-  Abstract: "text-[#34d399] bg-[#34d399]/10 border-[#34d399]/20",
+  Cultural:   "text-[#f472b6] bg-[#f472b6]/10 border-[#f472b6]/20",
+  Sports:     "text-[#fb923c] bg-[#fb923c]/10 border-[#fb923c]/20",
+  Ceremony:   "text-[#34d399] bg-[#34d399]/10 border-[#34d399]/20",
+  Food:       "text-[#facc15] bg-[#facc15]/10 border-[#facc15]/20",
+  Music:      "text-[#f472b6] bg-[#f472b6]/10 border-[#f472b6]/20",
+  Abstract:   "text-[#34d399] bg-[#34d399]/10 border-[#34d399]/20",
 };
 
 const MONTHS = [
@@ -31,7 +34,7 @@ const EventCard = ({ event, isActive }) => (
     className={`flex items-center justify-between bg-cardBg px-6 py-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
       isActive
         ? "border-l-4 border-l-[#a3e635] border-t-[#1e1e22] border-r-[#1e1e22] border-b-[#1e1e22] hover:border-t-[#a3e635]/20 hover:border-r-[#a3e635]/20 hover:border-b-[#a3e635]/20"
-        : "border-border border-l-4 border-l-[#2a2a2e] hover:border-[#a3e635]/20"
+        : "border-border border-l-4 border-l-border hover:border-[#a3e635]/20"
     }`}
   >
     <div>
@@ -79,46 +82,75 @@ const UserPage = () => {
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("Your Profile");
 
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const response = await axios.get("http://localhost:9090/api/events");
-        const data = response.data;
-        setEvents(data.map(e => ({
-          ...e,
-          title: e.name || e.title,
-          date: e.startDate || e.date
-        })));
-      } catch (error) {
-        console.error("Backend offline, falling back to mock data", error);
-        setEvents(MOCK_EVENTS.map(e => ({
-          ...e,
-          title: e.name || e.title,
-          date: e.startDate || e.date
-        })));
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchEvents();
-  }, []);
+  // ─── DATA FETCHING ──────────────────────────────────────────────────────────
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (!token) return;
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await axios.get("http://localhost:9090/api/users/profile", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`
-          }
-        })
-        setUserName(res.data.name);
-      } catch (error) {
-        console.error("Error fetching profile", error);
-        setUserName(MOCK_USER.name);
-      }
+  const fetchProfile = async () => {
+    try {
+      const res = await axios.get("http://localhost:9090/api/users/profile", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // FIX: Using userFirstName and userLastName from UserResponse.java
+      // ApiResponse wraps the real object inside .data.data
+      // res.data           = { success: true, message: "...", data: { userId, userFirstName, ... } }
+      // res.data.data      = the actual UserResponse object
+      const user = res.data.data;
+      const fullName = `${user.userFirstName} ${user.userLastName}`;
+      setUserName(fullName);
+      // Keep localStorage in sync so UserProfilePage reads correct name
+      localStorage.setItem("name",  fullName);
+      localStorage.setItem("email", user.userEmail);
+      localStorage.setItem("userId", user.userId);
+    } catch (err) {
+      console.error("Profile fetch error:", err);
+      setUserName("User"); 
     }
-    fetchProfile();
-  }, []);
+  };
+
+  const fetchEvents = async () => {
+    try {
+      const res = await axios.get("http://localhost:9090/api/events", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // ApiResponse shape: { success, message, data: [ ...EventResponse ] }
+      // res.data.data is the actual array of events
+      const rawList = res.data.data;
+      if (!Array.isArray(rawList)) {
+      setEvents(MOCK_EVENTS);
+      return;
+    }
+
+      // FIX: Mapping backend fields (EventResponse.java) to frontend expectations
+      const backendEvents = rawList.map(e => ({
+        id:       e.eventId,
+        title:    e.eventName,
+        date:     e.eventStartDate,   // "2026-01-11" string — matches fmtDay() format
+        category: e.category  || "Abstract",
+        type:     e.eventType || "Free",
+        status:   e.eventStatus,
+        venue: e.programmes?.[0]?.venueName || "Click to see more details",
+        capacity: e.programmes?.[0]?.venueCapacity || 100,
+        attendees: e.programmes?.[0]?.seatsLeft != null
+          ? (e.programmes[0].venueCapacity - e.programmes[0].seatsLeft)
+          : 0,
+        }));
+
+      setEvents(backendEvents);
+    } catch (err) {
+      console.error("Event fetch error:", err);
+      setEvents(MOCK_EVENTS);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProfile();
+  fetchEvents();
+}, []);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -156,14 +188,13 @@ const UserPage = () => {
           <ThemeToggle />
 
           {/* View Profile */}
-          <Link
-            to="/userprofile"
-            className="flex items-center gap-2 text-textMuted hover:text-themeAccent transition-colors no-underline"
-          >
-            <UserCircle size={20} />
-            <span className="text-sm font-medium">{userName}</span>
-          </Link>
-
+            <Link
+              to="/userprofile"
+              className="flex items-center gap-2 text-textMuted hover:text-themeAccent transition-colors no-underline"
+            >
+              <UserCircle size={20} />
+              <span className="text-sm font-bold text-main">{userName}</span>
+            </Link>
           {/* Events dropdown */}
           <div className="relative">
             <button
@@ -180,13 +211,13 @@ const UserPage = () => {
                     setSelectedDate(todayStr);
                     setIsDropdownOpen(false);
                   }}
-                  className="w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-[#1e1e22] hover:text-themeAccent transition-colors"
+                  className="w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-pageBg hover:text-themeAccent transition-colors"
                 >
                   <Link to="/events/ongoing">Ongoing Events</Link>
                 </button>
                 <button
                   onClick={() => setIsDropdownOpen(false)}
-                  className="w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-[#1e1e22] hover:text-themeAccent transition-colors"
+                  className="w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-pageBg hover:text-themeAccent transition-colors"
                 >
                   <Link to="/events/upcoming">Upcoming Events</Link>
                 </button>
@@ -222,20 +253,20 @@ const UserPage = () => {
           {/* Dynamic Schedule Section */}
           <section className="space-y-6">
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 bg-[#111115]/30 border border-[#1e1e22] rounded-3xl">
+              <div className="flex flex-col items-center justify-center py-20 bg-cardBg/50 border border-border rounded-3xl">
                 <div className="w-10 h-10 border-2 border-[#a3e635]/20 border-t-[#a3e635] rounded-full animate-spin mb-4" />
-                <p className="text-center text-[#5a5a62] animate-pulse font-medium">
+                <p className="text-center text-textMuted animate-pulse font-medium">
                   Syncing with EventSphere...
                 </p>
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between border-b border-[#1e1e22] pb-4">
-                  <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-white">
+                <div className="flex items-center justify-between border-b border-border pb-4">
+                  <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-main">
                     <span className="inline-block w-6 h-0.5 bg-[#a3e635] rounded-full" />
                     {selectedDate === todayStr ? "Today's Schedule" : `Schedule for ${new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
                   </h2>
-                  <span className="text-xs font-medium text-[#5a5a62] bg-[#111115] px-3 py-1 rounded-full border border-[#1e1e22]">
+                  <span className="text-xs font-medium text-textMuted bg-pageBg px-3 py-1 rounded-full border border-border">
                     {filteredEvents.length} {filteredEvents.length === 1 ? 'Event' : 'Events'}
                   </span>
                 </div>
@@ -259,17 +290,17 @@ const UserPage = () => {
                     {/* Show "View More" if there are more than 5 events */}
                     {filteredEvents.length > 5 && (
                       <button onClick={() => navigate("/events")}
-                        className="w-full py-3 border border-dashed border-[#1e1e22] rounded-2xl text-sm hover:text-[#a3e635]/50 transition-all font-medium">
+                        className="w-full py-3 border border-dashed border-border rounded-2xl text-sm hover:text-[#a3e635]/50 transition-all font-medium">
                         + See {filteredEvents.length - 5} more events for this day
                       </button>
                     )}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-20 bg-[#111115]/50 border border-dashed border-[#1e1e22] rounded-3xl">
-                    <div className="w-12 h-12 bg-[#1e1e22] rounded-full flex items-center justify-center mb-4 text-xl">
-                      <span className="text-[#3a3a42]">📅</span>
+                  <div className="flex flex-col items-center justify-center py-20 bg-cardBg/50 border border-dashed border-border rounded-3xl">
+                    <div className="w-12 h-12 bg-pageBg rounded-full flex items-center justify-center mb-4 text-xl">
+                      <span className="text-textMuted">📅</span>
                     </div>
-                    <p className="text-[#a0a0ab] text-sm font-medium">
+                    <p className="text-textMuted text-sm font-medium">
                       No events scheduled for this date.
                     </p>
                     {/* Only show Return to Today if the user is not on today's date */}
@@ -297,7 +328,7 @@ const UserPage = () => {
             <div className="flex items-center justify-between mb-6">
               <button
                 onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1e1e22] border border-themeBorder text-textMuted hover:border-[#a3e635] hover:text-main transition-all"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-pageBg border border-border text-textMuted hover:border-[#a3e635] hover:text-main transition-all"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -306,7 +337,7 @@ const UserPage = () => {
               </span>
               <button
                 onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1e1e22] border border-themeBorder text-textMuted hover:border-[#a3e635] hover:text-main transition-all"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-pageBg border border-border text-textMuted hover:border-[#a3e635] hover:text-main transition-all"
               >
                 <ChevronRight size={16} />
               </button>
@@ -317,7 +348,7 @@ const UserPage = () => {
               {DAYS.map((d) => (
                 <div
                   key={d}
-                  className="text-[10px] font-semibold text-[#3a3a42] py-1"
+                  className="text-[10px] font-semibold text-textMuted py-1"
                 >
                   {d}
                 </div>
@@ -347,7 +378,7 @@ const UserPage = () => {
                         ? "bg-themeAccent text-[#0c0c0f] font-bold"
                         : isToday
                           ? "bg-themeAccent/20 text-themeAccent ring-1 ring-themeAccent/40"
-                          : "text-[#c0c0c8] hover:bg-[#1e1e22]"
+                          : "text-textMuted hover:bg-pageBg"
                     }`}
                   >
                     {day}

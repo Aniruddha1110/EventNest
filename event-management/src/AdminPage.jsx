@@ -84,21 +84,90 @@ const UsersTab = ({ backendOnline }) => {
   const [fetching, setFetching] = useState(false);
 
   useEffect(() => {
-    if (!backendOnline) return;
-    setFetching(true);
-    fetch(`${API}/api/admin/users`).then(r => r.json()).then(setUsers).catch(() => {}).finally(() => setFetching(false));
-  }, [backendOnline]);
+  if (!backendOnline) return;
+
+  // 1. Retrieve your JWT (assuming it's stored in localStorage for this example)
+  const token = localStorage.getItem('token'); 
+
+  setFetching(true);
+
+  fetch(`${API}/api/admin/users`, {
+    method: 'GET', // GET is default, but good to be explicit
+    headers: {
+      // 2. Attach the JWT to the Authorization header
+      'Authorization': `Bearer ${token}`, 
+      'Content-Type': 'application/json'
+    }
+  })
+    .then(r => {
+      // 3. fetch doesn't automatically throw errors on 401/403/500 statuses. 
+      // You must check if the response is ok before parsing JSON.
+      if (!r.ok) {
+        if (r.status === 401) {
+           throw new Error("Unauthorized: Token may be expired or invalid.");
+        }
+        throw new Error(`HTTP error! status: ${r.status}`);
+      }
+      return r.json();
+    })
+    .then(j => setUsers(j.data || j))
+    .catch((error) => {
+      // 4. Don't swallow errors silently! Log them or set an error state 
+      // so you know if your JWT authentication is failing.
+      console.error("Failed to fetch users:", error.message);
+    })
+    .finally(() => setFetching(false));
+}, [backendOnline]);
 
   const filtered = users.filter(u =>
-    `${u.firstName} ${u.lastName} ${u.email} ${u.username}`.toLowerCase().includes(search.toLowerCase())
+    `${u.userFirstName} ${u.userLastName} ${u.userEmail} ${u.userUsername}`.toLowerCase().includes(search.toLowerCase())
   );
 
-  const startEdit = (u) => { setEditingId(u.id); setEditForm({ ...u }); };
-  const saveEdit = () => {
-    setUsers(prev => prev.map(u => u.id === editingId ? { ...editForm } : u));
-    setEditingId(null);
+const startEdit = (u) => { setEditingId(u.userId); setEditForm({ ...u }); };
+  // ✅ FIXED
+const saveEdit = async () => {
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${API}/api/admin/users/${editingId}`, {
+  method: 'PUT',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    userFirstName: editForm.userFirstName,
+    userLastName:  editForm.userLastName,
+    userEmail:     editForm.userEmail,
+    userPhoneNo:   editForm.userPhoneNo,
+    userUsername:  editForm.userUsername,
+  })
+});
+if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+const j = await res.json();
+setUsers(prev => prev.map(u => u.userId === editingId ? { ...u, ...(j.data || editForm) } : u));
+setEditingId(null);
+  } catch (error) {
+    console.error("Failed to update User:", error.message);
+  }
+};
+  const deleteUser = async (id) => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${API}/api/admin/users/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      setUsers(prev => prev.filter(u => u.userId !== id));
+    } catch (error) {
+      console.error("Failed to delete user:", error.message);
+    } finally {
+      setConfirmId(null);
+    }
   };
-  const deleteUser = (id) => { setUsers(prev => prev.filter(u => u.id !== id)); setConfirmId(null); };
 
   if (!backendOnline) return <EmptyState icon={Users} message="Backend not connected" sub="User data will appear here once the backend is running at localhost:9090" />;
   if (fetching) return <div className="py-12 text-center text-sm text-textMuted">Loading users...</div>;
@@ -125,38 +194,143 @@ const UsersTab = ({ backendOnline }) => {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((user, idx) => (
-              <tr key={user.id} className={`bg-cardBg hover:brightness-95 transition ${idx < filtered.length - 1 ? "border-b border-themeBorder" : ""}`}>
-                <td className="px-4 py-3 font-mono text-xs text-textMuted">{user.id}</td>
-                {editingId === user.id ? (
-                  <>
-                    <td className="px-4 py-2"><div className="flex gap-1">
-                      <input value={editForm.firstName} onChange={e => setEditForm(p => ({ ...p, firstName: e.target.value }))} className={`w-24 ${smallInputCls}`} />
-                      <input value={editForm.lastName} onChange={e => setEditForm(p => ({ ...p, lastName: e.target.value }))} className={`w-24 ${smallInputCls}`} />
-                    </div></td>
-                    <td className="px-4 py-2"><input value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} className={`w-full ${smallInputCls}`} /></td>
-                    <td className="px-4 py-2"><input value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} className={`w-28 ${smallInputCls}`} /></td>
-                    <td className="px-4 py-2"><input value={editForm.username} onChange={e => setEditForm(p => ({ ...p, username: e.target.value }))} className={`w-full ${smallInputCls}`} /></td>
-                    <td className="px-4 py-2"><div className="flex justify-end gap-2">
-                      <button onClick={saveEdit} className="p-1.5 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:opacity-80"><Check size={14} /></button>
-                      <button onClick={() => setEditingId(null)} className="p-1.5 rounded-lg bg-pageBg text-textMuted hover:opacity-80"><X size={14} /></button>
-                    </div></td>
-                  </>
-                ) : (
-                  <>
-                    <td className="px-4 py-3 font-medium text-textMain">{user.firstName} {user.lastName}</td>
-                    <td className={tdCls}>{user.email}</td>
-                    <td className={tdCls}>{user.phone}</td>
-                    <td className={tdCls}>{user.username}</td>
-                    <td className="px-4 py-3"><div className="flex justify-end gap-2">
-                      <button onClick={() => startEdit(user)} className="p-1.5 rounded-lg text-textMuted hover:text-themeAccent transition"><Edit2 size={14} /></button>
-                      <button onClick={() => setConfirmId(user.id)} className="p-1.5 rounded-lg text-textMuted hover:text-red-500 transition"><Trash2 size={14} /></button>
-                    </div></td>
-                  </>
-                )}
-              </tr>
-            ))}
-          </tbody>
+  {filtered.map((user, idx) => (
+    <tr
+      key={user.userId}
+      className={`bg-cardBg hover:brightness-95 transition ${
+        idx < filtered.length - 1 ? "border-b border-themeBorder" : ""
+      }`}
+    >
+      <td className="px-4 py-3 font-mono text-xs text-textMuted">
+        {user.userId}
+      </td>
+
+      {editingId === user.userId ? (
+        <>
+          {/* First + Last Name */}
+          <td className="px-4 py-2">
+            <div className="flex gap-1">
+              <input
+                value={editForm.userFirstName || ""}
+                onChange={(e) =>
+                  setEditForm((p) => ({
+                    ...p,
+                    userFirstName: e.target.value,
+                  }))
+                }
+                className={`w-24 ${smallInputCls}`}
+              />
+              <input
+                value={editForm.userLastName || ""}
+                onChange={(e) =>
+                  setEditForm((p) => ({
+                    ...p,
+                    userLastName: e.target.value,
+                  }))
+                }
+                className={`w-24 ${smallInputCls}`}
+              />
+            </div>
+          </td>
+
+          {/* Email */}
+          <td className="px-4 py-2">
+            <input
+              value={editForm.userEmail || ""}
+              onChange={(e) =>
+                setEditForm((p) => ({
+                  ...p,
+                  userEmail: e.target.value,
+                }))
+              }
+              className={`w-full ${smallInputCls}`}
+            />
+          </td>
+
+          {/* Phone */}
+          <td className="px-4 py-2">
+            <input
+              value={editForm.userPhoneNo || ""}
+              onChange={(e) =>
+                setEditForm((p) => ({
+                  ...p,
+                  userPhoneNo: e.target.value,
+                }))
+              }
+              className={`w-28 ${smallInputCls}`}
+            />
+          </td>
+
+          {/* Username */}
+          <td className="px-4 py-2">
+            <input
+              value={editForm.userUsername || ""}
+              onChange={(e) =>
+                setEditForm((p) => ({
+                  ...p,
+                  userUsername: e.target.value,
+                }))
+              }
+              className={`w-full ${smallInputCls}`}
+            />
+          </td>
+
+          {/* Actions */}
+          <td className="px-4 py-2">
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={saveEdit}
+                className="p-1.5 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:opacity-80"
+              >
+                <Check size={14} />
+              </button>
+              <button
+                onClick={() => setEditingId(null)}
+                className="p-1.5 rounded-lg bg-pageBg text-textMuted hover:opacity-80"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </td>
+        </>
+      ) : (
+        <>
+          {/* Name */}
+          <td className="px-4 py-3 font-medium text-textMain">
+            {user.userFirstName} {user.userLastName}
+          </td>
+
+          {/* Email */}
+          <td className={tdCls}>{user.userEmail}</td>
+
+          {/* Phone */}
+          <td className={tdCls}>{user.userPhoneNo}</td>
+
+          {/* Username */}
+          <td className={tdCls}>{user.userUsername}</td>
+
+          {/* Actions */}
+          <td className="px-4 py-3">
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => startEdit(user)}
+                className="p-1.5 rounded-lg text-textMuted hover:text-themeAccent transition"
+              >
+                <Edit2 size={14} />
+              </button>
+              <button
+                onClick={() => setConfirmId(user.userId)}
+                className="p-1.5 rounded-lg text-textMuted hover:text-red-500 transition"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </td>
+        </>
+      )}
+    </tr>
+  ))}
+</tbody>
         </table>
         {filtered.length === 0 && !fetching && <div className="text-center py-10 text-sm text-textMuted">No users found</div>}
       </div>
@@ -178,24 +352,84 @@ const VenuesTab = ({ backendOnline }) => {
   const [fetching, setFetching] = useState(false);
 
   useEffect(() => {
-    if (!backendOnline) return;
-    setFetching(true);
-    fetch(`${API}/api/admin/venues`).then(r => r.json()).then(setVenues).catch(() => {}).finally(() => setFetching(false));
-  }, [backendOnline]);
+  if (!backendOnline) return;
 
-  const startEdit = (v) => { setEditingId(v.id); setEditForm({ ...v }); };
+  // Retrieve your JWT
+  const token = localStorage.getItem('token'); 
+
+  setFetching(true);
+
+  fetch(`${API}/api/admin/venues`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`, 
+      'Content-Type': 'application/json'
+    }
+  })
+    .then(r => {
+      // Catch HTTP errors like 401 Unauthorized or 403 Forbidden
+      if (!r.ok) {
+        if (r.status === 401) {
+           throw new Error("Unauthorized: Token may be expired or invalid.");
+        }
+        throw new Error(`HTTP error! status: ${r.status}`);
+      }
+      return r.json();
+    })
+    .then(j => setVenues(j.data || j))
+    .catch((error) => {
+      // Log the error so you aren't failing silently
+      console.error("Failed to fetch venues:", error.message);
+    })
+    .finally(() => setFetching(false));
+}, [backendOnline]);
+
+  const startEdit = (v) => { setEditingId(v.venueId); setEditForm({ ...v }); };
   const saveEdit = () => {
-    setVenues(prev => prev.map(v => v.id === editingId ? { ...editForm, capacity: Number(editForm.capacity) } : v));
+    setVenues(prev => prev.map(v => v.venueId === editingId ? { ...editForm, capacity: Number(editForm.capacity) } : v));
     setEditingId(null);
   };
-  const deleteVenue = (id) => { setVenues(prev => prev.filter(v => v.id !== id)); setConfirmId(null); };
-  const addVenue = () => {
-    if (!addForm.name.trim() || !addForm.capacity) return;
-    const newId = `V-${String(venues.length + 1).padStart(4, "0")}`;
-    setVenues(prev => [...prev, { id: newId, name: addForm.name, capacity: Number(addForm.capacity), availability: addForm.availability }]);
+  // ✅ FIXED
+const deleteVenue = async (id) => {
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${API}/api/admin/venues/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    setVenues(prev => prev.filter(v => v.venueId !== id));
+    setConfirmId(null);
+  } catch (error) {
+    console.error("Failed to delete venue:", error.message);
+  }
+};
+  // ✅ FIXED
+const addVenue = async () => {
+  if (!addForm.name.trim() || !addForm.capacity) return;
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${API}/api/admin/venues`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        venueName: addForm.name,
+        venueCapacity: Number(addForm.capacity),
+        venueAvailability: addForm.availability
+      })
+    });
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const j = await res.json();
+    setVenues(prev => [...prev, j.data || j]);
     setAddForm({ name: "", capacity: "", availability: "Y" });
     setShowAddForm(false);
-  };
+  } catch (error) {
+    console.error("Failed to add venue:", error.message);
+  }
+};
 
   if (!backendOnline) return <EmptyState icon={Building2} message="Backend not connected" sub="Venue data will appear here once the backend is running at localhost:9090" />;
   if (fetching) return <div className="py-12 text-center text-sm text-textMuted">Loading venues...</div>;
@@ -220,14 +454,14 @@ const VenuesTab = ({ backendOnline }) => {
           </thead>
           <tbody>
             {venues.map((venue, idx) => (
-              <tr key={venue.id} className={`bg-cardBg hover:brightness-95 transition ${idx < venues.length - 1 ? "border-b border-themeBorder" : ""}`}>
-                <td className="px-4 py-3 font-mono text-xs text-textMuted">{venue.id}</td>
-                {editingId === venue.id ? (
+              <tr key={venue.venueId} className={`bg-cardBg hover:brightness-95 transition ${idx < venues.length - 1 ? "border-b border-themeBorder" : ""}`}>
+                <td className="px-4 py-3 font-mono text-xs text-textMuted">{venue.venueId}</td>
+                {editingId === venue.venueId ? (
                   <>
-                    <td className="px-4 py-2"><input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className={`w-full ${smallInputCls}`} /></td>
-                    <td className="px-4 py-2"><input type="number" value={editForm.capacity} onChange={e => setEditForm(p => ({ ...p, capacity: e.target.value }))} className={`w-24 ${smallInputCls}`} /></td>
+                    <td className="px-4 py-2"><input value={editForm.venueName} onChange={e => setEditForm(p => ({ ...p, venueName: e.target.value }))} className={`w-full ${smallInputCls}`} /></td>
+                    <td className="px-4 py-2"><input type="number" value={editForm.venueCapacity} onChange={e => setEditForm(p => ({ ...p, venueCapacity: e.target.value }))} className={`w-24 ${smallInputCls}`} /></td>
                     <td className="px-4 py-2">
-                      <select value={editForm.availability} onChange={e => setEditForm(p => ({ ...p, availability: e.target.value }))} className={smallInputCls}>
+                      <select value={editForm.venueAvailability} onChange={e => setEditForm(p => ({ ...p, venueAvailability: e.target.value }))} className={smallInputCls}>
                         <option value="Y">Available</option>
                         <option value="N">Unavailable</option>
                       </select>
@@ -239,16 +473,16 @@ const VenuesTab = ({ backendOnline }) => {
                   </>
                 ) : (
                   <>
-                    <td className="px-4 py-3 font-medium text-textMain">{venue.name}</td>
-                    <td className={tdCls}>{venue.capacity?.toLocaleString()}</td>
+                    <td className="px-4 py-3 font-medium text-textMain">{venue.venueName}</td>
+                    <td className={tdCls}>{venue.venueCapacity?.toLocaleString()}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${venue.availability === "Y" ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"}`}>
-                        {venue.availability === "Y" ? "Available" : "Unavailable"}
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${venue.venueAvailability === "Y" ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"}`}>
+                        {venue.venueAvailability === "Y" ? "Available" : "Unavailable"}
                       </span>
                     </td>
                     <td className="px-4 py-3"><div className="flex justify-end gap-2">
                       <button onClick={() => startEdit(venue)} className="p-1.5 rounded-lg text-textMuted hover:text-themeAccent transition"><Edit2 size={14} /></button>
-                      <button onClick={() => setConfirmId(venue.id)} className="p-1.5 rounded-lg text-textMuted hover:text-red-500 transition"><Trash2 size={14} /></button>
+                      <button onClick={() => setConfirmId(venue.venueId)} className="p-1.5 rounded-lg text-textMuted hover:text-red-500 transition"><Trash2 size={14} /></button>
                     </div></td>
                   </>
                 )}
@@ -300,10 +534,38 @@ const EventsTab = ({ backendOnline }) => {
   const [fetching, setFetching] = useState(false);
 
   useEffect(() => {
-    if (!backendOnline) return;
-    setFetching(true);
-    fetch(`${API}/api/admin/events`).then(r => r.json()).then(setEvents).catch(() => {}).finally(() => setFetching(false));
-  }, [backendOnline]);
+  if (!backendOnline) return;
+
+  // 1. Get the token from storage
+  const token = localStorage.getItem('token'); 
+  
+  setFetching(true);
+
+  // 2. Add the headers object to your fetch call
+  fetch(`${API}/api/admin/events`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`, // <-- CRITICAL FIX
+      'Content-Type': 'application/json'
+    }
+  })
+    .then(r => {
+      if (!r.ok) throw new Error(`Error: ${r.status}`);
+      return r.json();
+    })
+    .then(j => {
+      const list = j.data || j;
+      setEvents(Array.isArray(list) ? list.map(e => ({
+        ...e,
+        id:     e.id     || e.eventId,
+        name:   e.name   || e.eventName,
+        status: e.status || e.eventStatus,
+        startDate: e.startDate || e.eventStartDate,
+      })) : []);
+    })
+    .catch(err => console.error("Event fetch failed:", err)) // Added logging
+    .finally(() => setFetching(false));
+}, [backendOnline]);
 
   const handleAction = (id, action) => {
     if (action === "delete") setEvents(prev => prev.filter(e => e.id !== id));
@@ -324,35 +586,35 @@ const EventsTab = ({ backendOnline }) => {
       ) : (
         <div className="space-y-3">
           {events.map(event => (
-            <div key={event.id} className="bg-cardBg border border-themeBorder rounded-xl p-4 hover:border-themeAccent/30 transition">
+            <div key={event.eventId} className="bg-cardBg border border-themeBorder rounded-xl p-4 hover:border-themeAccent/30 transition">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="font-mono text-xs text-textMuted">{event.id}</span>
-                    <StatusBadge status={event.status} />
+                    <span className="font-mono text-xs text-textMuted">{event.eventId}</span>
+                    <StatusBadge status={event.eventStatus} />
                   </div>
-                  <h4 className="font-bold text-textMain">{event.name}</h4>
-                  <p className="text-xs mt-0.5 leading-relaxed text-textMuted">{event.description}</p>
+                  <h4 className="font-bold text-textMain">{event.eventName}</h4>
+                  <p className="text-xs mt-0.5 leading-relaxed text-textMuted">{event.eventDescription}</p>
                   <div className="flex items-center gap-4 mt-2 text-xs flex-wrap text-textMuted">
-                    <span>📅 {event.startDate} → {event.endDate}</span>
-                    <span>⏰ {event.time}</span>
-                    <span>⏱ {event.duration}h</span>
+                    <span>📅 {event.eventStartDate} → {event.eventEndDate}</span>
+                    <span>⏰ {event.eventTime}</span>
+                    <span>⏱ {event.eventDuration}h</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {event.status === "pending" && (
+                  {event.eventStatus === "pending" && (
                     <>
-                      <button onClick={() => setConfirmAction({ id: event.id, action: "approve" })}
+                      <button onClick={() => setConfirmAction({ id: event.eventId, action: "approve" })}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:opacity-80 transition">
                         <Check size={13} /> Approve
                       </button>
-                      <button onClick={() => setConfirmAction({ id: event.id, action: "reject" })}
+                      <button onClick={() => setConfirmAction({ id: event.eventId, action: "reject" })}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:opacity-80 transition">
                         <X size={13} /> Reject
                       </button>
                     </>
                   )}
-                  <button onClick={() => setConfirmAction({ id: event.id, action: "delete" })} className="p-1.5 rounded-lg text-textMuted hover:text-red-500 transition"><Trash2 size={15} /></button>
+                  <button onClick={() => setConfirmAction({ id: event.eventId, action: "delete" })} className="p-1.5 rounded-lg text-textMuted hover:text-red-500 transition"><Trash2 size={15} /></button>
                 </div>
               </div>
             </div>
@@ -380,17 +642,69 @@ const ProgrammesTab = ({ backendOnline }) => {
 
   useEffect(() => {
     if (!backendOnline) return;
+
+    // 1. Get the JWT token from storage
+    const token = localStorage.getItem('token'); 
+    
     setFetching(true);
-    fetch(`${API}/api/admin/programmes`).then(r => r.json()).then(setProgrammes).catch(() => {}).finally(() => setFetching(false));
+
+    // 2. Add Authorization headers to the fetch call
+    fetch(`${API}/api/admin/programmes`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+      .then(r => {
+        if (!r.ok) throw new Error(`Server responded with ${r.status}`);
+        return r.json();
+      })
+      .then(j => {
+        // Handle both { data: [...] } and direct array formats
+        const list = j.data || j;
+        setProgrammes(Array.isArray(list) ? list : []);
+      })
+      .catch(err => {
+        console.error("Failed to fetch programmes:", err);
+      })
+      .finally(() => setFetching(false));
   }, [backendOnline]);
 
-  const counts = { all: programmes.length, pending: programmes.filter(p => p.status === "pending").length, approved: programmes.filter(p => p.status === "approved").length, rejected: programmes.filter(p => p.status === "rejected").length };
-  const filtered = filterStatus === "all" ? programmes : programmes.filter(p => p.status === filterStatus);
+  const counts = { all: programmes.length, pending: programmes.filter(p => p.programmeStatus === "pending").length, approved: programmes.filter(p => p.programmeStatus === "approved").length, rejected: programmes.filter(p => p.programmeStatus === "rejected").length };
+  const filtered = filterStatus === "all" ? programmes : programmes.filter(p => p.programmeStatus === filterStatus);
 
-  const handleAction = (id, action) => {
-    if (action === "delete") setProgrammes(prev => prev.filter(p => p.id !== id));
-    else setProgrammes(prev => prev.map(p => p.id === id ? { ...p, status: action === "approve" ? "approved" : "rejected" } : p));
-    setConfirmAction(null);
+  const handleAction = async (id, action) => {
+    const token = localStorage.getItem("token");
+    try {
+      if (action === "delete") {
+        const res = await fetch(`${API}/api/admin/programmes/${id}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+        setProgrammes(prev => prev.filter(p => p.programmeId !== id));
+      } else {
+        const status = action === "approve" ? "approved" : "rejected";
+        const res = await fetch(`${API}/api/admin/programmes/${id}/status`, {
+          method: "PATCH",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status }),
+        });
+        if (!res.ok) throw new Error(`Status update failed: ${res.status}`);
+        setProgrammes(prev =>
+          prev.map(p => p.programmeId === id ? { ...p, programmeStatus: status } : p)
+        );
+      }
+    } catch (err) {
+      console.error("Programme action failed:", err.message);
+      alert(err.message);
+    } finally {
+      setConfirmAction(null);
+    }
   };
 
   if (!backendOnline) return <EmptyState icon={BookOpen} message="Backend not connected" sub="Programme data will appear here once the backend is running at localhost:9090" />;
@@ -412,34 +726,34 @@ const ProgrammesTab = ({ backendOnline }) => {
       ) : (
         <div className="space-y-3">
           {filtered.map(prog => (
-            <div key={prog.id} className="bg-cardBg border border-themeBorder rounded-xl p-4 hover:border-themeAccent/30 transition">
+            <div key={prog.programmeId} className="bg-cardBg border border-themeBorder rounded-xl p-4 hover:border-themeAccent/30 transition">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="font-mono text-xs text-textMuted">{prog.id}</span>
-                    <StatusBadge status={prog.status} />
+                    <span className="font-mono text-xs text-textMuted">{prog.programmeId}</span>
+                    <StatusBadge status={prog.programmeStatus} />
                   </div>
-                  <h4 className="font-bold text-textMain">{prog.name}</h4>
+                  <h4 className="font-bold text-textMain">{prog.programmeName}</h4>
                   <div className="flex items-center gap-3 mt-1 text-xs flex-wrap text-textMuted">
                     <span>📅 {prog.eventName}</span>
-                    <span>🏢 {prog.organiser}</span>
-                    <span>📍 {prog.venue}</span>
+                    <span>🏢 {prog.organiserName}</span>
+                    <span>📍 {prog.venueName}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {prog.status === "pending" && (
+                  {prog.programmeStatus === "pending" && (
                     <>
-                      <button onClick={() => setConfirmAction({ id: prog.id, action: "approve" })}
+                      <button onClick={() => setConfirmAction({ id: prog.programmeId, action: "approve" })}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:opacity-80 transition">
                         <Check size={13} /> Approve
                       </button>
-                      <button onClick={() => setConfirmAction({ id: prog.id, action: "reject" })}
+                      <button onClick={() => setConfirmAction({ id: prog.programmeId, action: "reject" })}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:opacity-80 transition">
                         <X size={13} /> Reject
                       </button>
                     </>
                   )}
-                  <button onClick={() => setConfirmAction({ id: prog.id, action: "delete" })} className="p-1.5 rounded-lg text-textMuted hover:text-red-500 transition"><Trash2 size={15} /></button>
+                  <button onClick={() => setConfirmAction({ id: prog.programmeId, action: "delete" })} className="p-1.5 rounded-lg text-textMuted hover:text-red-500 transition"><Trash2 size={15} /></button>
                 </div>
               </div>
             </div>
@@ -469,23 +783,111 @@ const OrganisersTab = ({ backendOnline }) => {
   const [fetching, setFetching] = useState(false);
 
   useEffect(() => {
-    if (!backendOnline) return;
-    setFetching(true);
-    Promise.all([
-      fetch(`${API}/api/admin/organisers`).then(r => r.json()),
-      fetch(`${API}/api/admin/programmes?status=pending`).then(r => r.json()),
-    ]).then(([orgs, progs]) => { setOrganisers(orgs); setPendingProgs(progs); }).catch(() => {}).finally(() => setFetching(false));
-  }, [backendOnline]);
+  if (!backendOnline) return;
+  
+  const token = localStorage.getItem('token'); 
+  setFetching(true);
 
-  const removeOrganiser = (id) => { setOrganisers(prev => prev.filter(o => o.id !== id)); setConfirmId(null); };
-  const addOrganiser = () => {
-    if (!addForm.name.trim() || !addForm.email.trim() || !addForm.username.trim()) return;
-    const newId = `O-${String(organisers.length + 1).padStart(4, "0")}`;
-    setOrganisers(prev => [...prev, { id: newId, ...addForm }]);
-    setAddForm({ name: "", email: "", phone: "", username: "", password: "" });
-    setShowAddForm(false);
+  const authHeaders = {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
   };
-  const handleProgAction = (id) => setPendingProgs(prev => prev.filter(p => p.id !== id));
+
+  Promise.all([
+    fetch(`${API}/api/admin/organisers`, { headers: authHeaders }).then(r => r.json()),
+    fetch(`${API}/api/admin/programmes?status=pending`, { headers: authHeaders }).then(r => r.json()),
+  ])
+    .then(([orgs, progs]) => {
+      // Map OrganiserResponse.java fields to your Table fields
+      const orgList = (orgs.data || orgs).map(o => ({
+        id: o.organiserId,
+        name: o.organiserName,
+        email: o.organiserEmail,
+        phone: o.organiserPhoneNo,
+        username: o.organiserUsername
+      }));
+
+      // Map ProgrammeResponse.java fields for the Modal
+      const progList = (progs.data || progs).map(p => ({
+        id: p.programmeId,
+        name: p.programmeName,
+        eventName: p.eventName,
+        organiser: p.organiserName,
+        venue: p.venueName
+      }));
+
+      setOrganisers(orgList);
+      setPendingProgs(progList);
+    })
+    .catch(err => console.error("Fetch failed:", err))
+    .finally(() => setFetching(false));
+}, [backendOnline]);
+
+  const removeOrganiser = (id) => {
+  const token = localStorage.getItem('token');
+
+  fetch(`${API}/api/admin/organisers/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+    .then(r => {
+      if (!r.ok) throw new Error("Could not delete organiser");
+      // Only remove from screen if DB deletion was successful
+      setOrganisers(prev => prev.filter(o => o.id !== id));
+      setConfirmId(null);
+    })
+    .catch(err => alert(err.message));
+};
+ const addOrganiser = () => {
+  if (!addForm.name.trim() || !addForm.email.trim() || !addForm.username.trim()) return;
+  
+  const token = localStorage.getItem('token');
+
+  fetch(`${API}/api/admin/organisers`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(addForm) // Matches your AddOrganiserRequest.java exactly
+  })
+    .then(r => {
+      if (!r.ok) throw new Error("Validation failed (Check phone length or email)");
+      return r.json();
+    })
+    .then(newOrg => {
+      // Add the new organiser returned from DB to your table
+      setOrganisers(prev => [...prev, {
+        id: newOrg.organiserId,
+        name: newOrg.organiserName,
+        email: newOrg.organiserEmail,
+        phone: newOrg.organiserPhoneNo,
+        username: newOrg.organiserUsername
+      }]);
+      setShowAddForm(false);
+      setAddForm({ name: "", email: "", phone: "", username: "", password: "" });
+    })
+    .catch(err => alert(err.message));
+};
+  const handleProgAction = (id, action) => {
+  const token = localStorage.getItem('token');
+  const status = action === "approve" ? "approved" : "rejected";
+
+  fetch(`${API}/api/admin/programmes/${id}/status`, {
+    method: 'PATCH',
+    headers: { 
+      'Authorization': `Bearer ${token}`, 
+      'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify({ status: status }) 
+  })
+    .then(r => {
+      if (!r.ok) throw new Error("Failed to update programme status");
+      // Remove from the pending list on screen
+      setPendingProgs(prev => prev.filter(p => p.id !== id));
+    })
+    .catch(err => alert(err.message));
+};
 
   if (!backendOnline) return <EmptyState icon={User} message="Backend not connected" sub="Organiser data will appear here once the backend is running at localhost:9090" />;
   if (fetching) return <div className="py-12 text-center text-sm text-textMuted">Loading organisers...</div>;
@@ -560,8 +962,8 @@ const OrganisersTab = ({ backendOnline }) => {
                       <p className="text-xs mt-0.5 truncate text-textMuted">{prog.eventName} · {prog.organiser} · {prog.venue}</p>
                     </div>
                     <div className="flex gap-2 shrink-0">
-                      <button onClick={() => handleProgAction(prog.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:opacity-80"><Check size={12} /> Accept</button>
-                      <button onClick={() => handleProgAction(prog.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:opacity-80"><X size={12} /> Reject</button>
+                      <button onClick={() => handleProgAction(prog.id, "approve")} className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:opacity-80"><Check size={12} /> Accept</button>
+                      <button onClick={() => handleProgAction(prog.id, "reject")} className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:opacity-80"><X size={12} /> Reject</button>
                     </div>
                   </div>
                 ))}
@@ -628,6 +1030,7 @@ export default function AdminPage() {
   const [showAddAdminForm, setShowAddAdminForm] = useState(false);
   const [newAdminForm, setNewAdminForm] = useState({ firstName: "", lastName: "", email: "", phone: "", username: "", password: "" });
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
+  const [loadingPool, setLoadingPool] = useState(false);
 
   const tabs = [
     { key: "Users", icon: <Users size={15} /> },
@@ -640,10 +1043,26 @@ export default function AdminPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [profileRes, adminsRes] = await Promise.all([fetch(`${API}/api/admin/profile`), fetch(`${API}/api/admin/all`)]);
+        const token = localStorage.getItem("token");
+        const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
+        const [profileRes, adminsRes] = await Promise.all([
+          fetch(`${API}/api/admin/profile`, { headers: authHeader }),
+          fetch(`${API}/api/admin/all`,     { headers: authHeader }),
+        ]);
         if (!profileRes.ok) throw new Error("Backend offline");
-        setAdmin(await profileRes.json());
-        setAdmins(await adminsRes.json());
+        const profileJson = await profileRes.json();
+        const adminsJson  = await adminsRes.json();
+        const rawAdmin = profileJson.data || profileJson;
+        setAdmin({
+          ...rawAdmin,
+          // normalise field names: backend uses ADMIN_FIRST_NAME mapped to adminFirstName
+          name:  rawAdmin.name || (rawAdmin.adminFirstName ? rawAdmin.adminFirstName + " " + (rawAdmin.adminLastName || "") : "Admin"),
+          email: rawAdmin.email || rawAdmin.adminEmail || "",
+          phone: rawAdmin.phone || rawAdmin.adminPhoneNumber || "",
+          username: rawAdmin.username || rawAdmin.adminUsername || "",
+          id:    rawAdmin.id   || rawAdmin.adminId     || "",
+        });
+        setAdmins(adminsJson.data  || adminsJson);
         setBackendOnline(true);
       } catch { setAdmin(null); setAdmins([]); setBackendOnline(false); }
       finally { setLoading(false); }
@@ -653,8 +1072,19 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!backendOnline) return;
-    fetch(`${API}/api/admin/users`).then(r => r.json()).then(setAllUsers).catch(() => {});
-    fetch(`${API}/api/admin/organisers`).then(r => r.json()).then(setAllOrganisers).catch(() => {});
+    
+    const token = localStorage.getItem("token");
+    const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
+
+    fetch(`${API}/api/admin/users`, { headers: authHeader })
+      .then(r => r.json())
+      .then(j => setAllUsers(j.data || j))
+      .catch(err => console.error("User fetch error:", err));
+
+    fetch(`${API}/api/admin/organisers`, { headers: authHeader })
+      .then(r => r.json())
+      .then(j => setAllOrganisers(j.data || j))
+      .catch(err => console.error("Organiser fetch error:", err));
   }, [backendOnline]);
 
   const handleTabClick = (key) => setActiveTab(prev => prev === key ? null : key);
@@ -666,33 +1096,109 @@ export default function AdminPage() {
   const closeMail = () => setMailStep(null);
 
   const recipientPool = mailTarget === "Users"
-    ? allUsers.map(u => ({ id: u.id, name: `${u.firstName} ${u.lastName}`, email: u.email }))
-    : allOrganisers.map(o => ({ id: o.id, name: o.name, email: o.email }));
+    ? allUsers.map(u => ({ 
+        id: u.id || u.userId, 
+        name: `${u.firstName || u.userFirstName || ""} ${u.lastName || u.userLastName || ""}`.trim(), 
+        email: u.email || u.userEmail 
+      }))
+    : allOrganisers.map(o => ({ 
+        id: o.id || o.organiserId, 
+        name: o.name || o.organiserName, 
+        email: o.email || o.organiserEmail 
+      }));
+
   const filteredPool = recipientPool.filter(r => r.name.toLowerCase().includes(recipientSearch.toLowerCase()) || r.email.toLowerCase().includes(recipientSearch.toLowerCase()));
 
   const toggleRecipient = (person) => setSelectedRecipients(prev => prev.find(p => p.id === person.id) ? prev.filter(p => p.id !== person.id) : [...prev, person]);
   const addManualEmail = () => {
-    const email = manualEmail.trim();
-    if (!email || !email.includes("@")) return;
-    if (!selectedRecipients.find(p => p.email === email)) setSelectedRecipients(prev => [...prev, { id: email, name: email, email }]);
-    setManualEmail("");
-  };
+  const email = manualEmail.trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  
+  if (!emailRegex.test(email)) {
+    alert("Please enter a valid email address");
+    return;
+  }
+  
+  if (!selectedRecipients.find(p => p.email === email)) {
+    setSelectedRecipients(prev => [...prev, { id: email, name: email, email }]);
+  }
+  setManualEmail("");
+};
   const removeRecipient = (id) => setSelectedRecipients(prev => prev.filter(p => p.id !== id));
   const proceedToCompose = () => { if (mailMode === "particular" && selectedRecipients.length === 0) return; setMailStep("compose"); };
-  const handleSendMail = () => {
-    if (!mailSubject.trim() || !mailBody.trim()) return;
-    setMailSent(true);
-    setTimeout(() => closeMail(), 2500);
+  const handleSendMail = async () => {
+  if (!mailSubject.trim() || !mailBody.trim()) return;
+
+  const token = localStorage.getItem("token");
+  
+  // Prepare the payload to match your MailRequest DTO
+  const payload = {
+    target: mailTarget, // "All" | "Users" | "Organisers"
+    mode: mailMode,     // "all" | "particular"
+    recipients: mailMode === "particular" ? selectedRecipients.map(r => r.email) : [],
+    subject: mailSubject,
+    body: mailBody
   };
 
+  try {
+    const response = await fetch(`${API}/api/mail/send`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      setMailSent(true);
+      setTimeout(() => closeMail(), 2500);
+    } else {
+      alert("Failed to dispatch mail. Ensure you have admin privileges.");
+    }
+  } catch (error) {
+    console.error("Mail Error:", error);
+    alert("Connection error. Is the backend running?");
+  }
+};
+
   const addNewAdmin = () => {
-    if (!newAdminForm.firstName.trim() || !newAdminForm.email.trim() || !newAdminForm.username.trim()) return;
-    const newId = `A-${String(admins.length + 1).padStart(4, "0")}`;
-    setAdmins(prev => [...prev, { id: newId, isProtected: false, ...newAdminForm }]);
-    setNewAdminForm({ firstName: "", lastName: "", email: "", phone: "", username: "", password: "" });
-    setShowAddAdminForm(false);
-  };
-  const removeAdmin = (id) => { if (PROTECTED_ADMIN_IDS.includes(id)) return; setAdmins(prev => prev.filter(a => a.id !== id)); setConfirmRemoveId(null); };
+  if (!newAdminForm.firstName.trim() || !newAdminForm.email.trim() || !newAdminForm.username.trim()) return;
+  
+  const token = localStorage.getItem("token");
+
+  fetch(`${API}/api/admin/add`, {
+    method: 'POST',
+    headers: { 
+      'Authorization': `Bearer ${token}`, 
+      'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify(newAdminForm)
+  })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(data => {
+      // data.data should contain the new Admin object from Spring Boot
+      setAdmins(prev => [...prev, data.data || data]);
+      setShowAddAdminForm(false);
+      setNewAdminForm({ firstName: "", lastName: "", email: "", phone: "", username: "", password: "" });
+    })
+    .catch(() => alert("Failed to add admin. Check if email/username already exists."));
+};
+  const removeAdmin = (id) => {
+  if (PROTECTED_ADMIN_IDS.includes(id)) return;
+  const token = localStorage.getItem("token");
+
+  fetch(`${API}/api/admin/remove/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+    .then(r => {
+      if (r.ok) {
+        setAdmins(prev => prev.filter(a => a.adminId !== id)); // Note: Check if field is id or adminId
+        setConfirmRemoveId(null);
+      }
+    });
+};
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-pageBg">
@@ -820,20 +1326,20 @@ export default function AdminPage() {
               ) : (
                 <div className="space-y-2">
                   {admins.map(a => {
-                    const isProtected = PROTECTED_ADMIN_IDS.includes(a.id);
+                    const isProtected = PROTECTED_ADMIN_IDS.includes(a.adminId);
                     return (
-                      <div key={a.id} className="flex items-center justify-between bg-pageBg border border-themeBorder rounded-xl px-4 py-3">
+                      <div key={a.adminId} className="flex items-center justify-between bg-pageBg border border-themeBorder rounded-xl px-4 py-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <p className="font-semibold text-sm text-textMain">{a.firstName} {a.lastName}</p>
+                            <p className="font-semibold text-sm text-textMain">{a.adminFirstName} {a.adminLastName}</p>
                             {isProtected && <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400">Founder</span>}
                           </div>
-                          <p className="text-xs mt-0.5 text-textMuted">{a.id} · {a.username}</p>
+                          <p className="text-xs mt-0.5 text-textMuted">{a.adminId} · {a.adminUsername}</p>
                         </div>
                         {isProtected ? (
                           <span className="flex items-center gap-1 text-xs text-textMuted"><ShieldOff size={13} /> Protected</span>
                         ) : (
-                          <button onClick={() => setConfirmRemoveId(a.id)} className="p-1.5 rounded-lg text-textMuted hover:text-red-500 transition"><Trash2 size={14} /></button>
+                          <button onClick={() => setConfirmRemoveId(a.adminId)} className="p-1.5 rounded-lg text-textMuted hover:text-red-500 transition"><Trash2 size={14} /></button>
                         )}
                       </div>
                     );

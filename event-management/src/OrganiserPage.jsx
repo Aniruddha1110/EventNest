@@ -60,10 +60,14 @@ function getTodayStr() {
 // ];
 
 const CATEGORY_COLORS = {
+  Technical:  "text-[#818cf8] bg-[#818cf8]/10 border-[#818cf8]/20",
   Technology: "text-[#818cf8] bg-[#818cf8]/10 border-[#818cf8]/20",
-  Music: "text-[#f472b6] bg-[#f472b6]/10 border-[#f472b6]/20",
-  Business: "text-[#fb923c] bg-[#fb923c]/10 border-[#fb923c]/20",
-  Abstract: "text-[#34d399] bg-[#34d399]/10 border-[#34d399]/20",
+  Cultural:   "text-[#f472b6] bg-[#f472b6]/10 border-[#f472b6]/20",
+  Music:      "text-[#f472b6] bg-[#f472b6]/10 border-[#f472b6]/20",
+  Sports:     "text-[#fb923c] bg-[#fb923c]/10 border-[#fb923c]/20",
+  Ceremony:   "text-[#34d399] bg-[#34d399]/10 border-[#34d399]/20",
+  Food:       "text-[#facc15] bg-[#facc15]/10 border-[#facc15]/20",
+  Abstract:   "text-[#34d399] bg-[#34d399]/10 border-[#34d399]/20",
 };
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
@@ -88,15 +92,27 @@ const OrganiserPage = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await axios.get("http://localhost:9090/api/events");
-        const data = response.data;
-        setEvents(
-          data.map((e) => ({
-            ...e,
-            title: e.name || e.title,
-            date: e.startDate || e.date,
-          }))
-        );
+        const response = await axios.get("http://localhost:9090/api/events", {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        // axios: response.data = ApiResponse { success, message, data: [...] }
+        const list = response.data.data || [];
+        setEvents(list.map((e) => ({
+          id:         e.eventId,
+          name:       e.eventName,
+          title:      e.eventName,
+          startDate:  e.eventStartDate,
+          date:       e.eventStartDate,   // used by calendar dot + filteredEvents
+          status:     e.eventStatus,
+          type:       e.eventType   || "Free",
+          category:   e.category    || "Cultural",
+          venue: e.programmes?.[0]?.venueName || "Click to see more details",
+          capacity:   e.programmes?.[0]?.venueCapacity || 0,
+          attendees:  e.programmes?.[0]?.seatsLeft != null
+            ? (e.programmes[0].venueCapacity - e.programmes[0].seatsLeft)
+            : 0,
+          programmes: e.programmes || [],
+        })));
       } catch (error) {
         console.error("Backend offline, falling back to mock data", error);
         setEvents(
@@ -116,12 +132,13 @@ const OrganiserPage = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await axios.get("http://localhost:9090/api/organiser/profile", {
+        const res = await axios.get("http://localhost:9090/api/organisers/profile", {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
-        setUserName(res.data.name);
+        // res.data = ApiResponse { success, message, data: OrganiserResponse }
+        setUserName(res.data.data?.organiserName || "Your Profile");
       } catch (error) {
         console.error("Error fetching profile", error);
         setUserName(MOCK_USER.name);
@@ -186,28 +203,28 @@ const OrganiserPage = () => {
                 <Link
                   to="/events/ongoing"
                   onClick={() => setIsDropdownOpen(false)}
-                  className="block w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-[#1e1e22] hover:text-themeAccent transition-colors no-underline"
+                  className="block w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-pageBg hover:text-themeAccent transition-colors no-underline"
                 >
                   Ongoing Events
                 </Link>
                 <Link
                   to="/events/upcoming"
                   onClick={() => setIsDropdownOpen(false)}
-                  className="block w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-[#1e1e22] hover:text-themeAccent transition-colors no-underline"
+                  className="block w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-pageBg hover:text-themeAccent transition-colors no-underline"
                 >
                   Upcoming Events
                 </Link>
                 <Link
                   to="/events/completed"
                   onClick={() => setIsDropdownOpen(false)}
-                  className="block w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-[#1e1e22] hover:text-themeAccent transition-colors no-underline"
+                  className="block w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-pageBg hover:text-themeAccent transition-colors no-underline"
                 >
                   Completed Events
                 </Link>
                 <Link
                   to="/events"
                   onClick={() => setIsDropdownOpen(false)}
-                  className="block w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-[#1e1e22] hover:text-themeAccent transition-colors no-underline"
+                  className="block w-full text-left px-4 py-3 text-sm text-textMuted hover:bg-pageBg hover:text-themeAccent transition-colors no-underline"
                 >
                   All Events
                 </Link>
@@ -228,15 +245,15 @@ const OrganiserPage = () => {
           {/* Dynamic Schedule Section */}
           <section className="space-y-6 mb-10">
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 bg-[#111115]/30 border border-[#1e1e22] rounded-3xl">
+              <div className="flex flex-col items-center justify-center py-20 bg-cardBg/50 border border-border rounded-3xl">
                 <div className="w-10 h-10 border-2 border-[#a3e635]/20 border-t-[#a3e635] rounded-full animate-spin mb-4" />
-                <p className="text-center text-[#5a5a62] animate-pulse font-medium">
+                <p className="text-center text-textMuted animate-pulse font-medium">
                   Syncing with EventSphere...
                 </p>
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between border-b border-[#1e1e22] pb-4">
+                <div className="flex items-center justify-between border-b border-border pb-4">
                   <h2 className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-white">
                     <span className="inline-block w-6 h-0.5 bg-[#a3e635] rounded-full" />
                     {selectedDate === todayStr
@@ -247,7 +264,7 @@ const OrganiserPage = () => {
                           year: "numeric",
                         })}`}
                   </h2>
-                  <span className="text-xs font-medium text-[#5a5a62] bg-[#111115] px-3 py-1 rounded-full border border-[#1e1e22]">
+                  <span className="text-xs font-medium text-textMuted bg-pageBg px-3 py-1 rounded-full border border-border">
                     {filteredEvents.length} {filteredEvents.length === 1 ? "Event" : "Events"}
                   </span>
                 </div>
@@ -272,18 +289,18 @@ const OrganiserPage = () => {
                     {filteredEvents.length > 5 && (
                       <button
                         onClick={() => navigate("/events")}
-                        className="w-full py-3 border border-dashed border-[#1e1e22] rounded-2xl text-sm hover:text-[#a3e635]/50 transition-all font-medium"
+                        className="w-full py-3 border border-dashed border-border rounded-2xl text-sm hover:text-[#a3e635]/50 transition-all font-medium"
                       >
                         + See {filteredEvents.length - 5} more events for this day
                       </button>
                     )}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-20 bg-[#111115]/50 border border-dashed border-[#1e1e22] rounded-3xl">
-                    <div className="w-12 h-12 bg-[#1e1e22] rounded-full flex items-center justify-center mb-4 text-xl">
-                      <span className="text-[#3a3a42]">📅</span>
+                  <div className="flex flex-col items-center justify-center py-20 bg-cardBg/50 border border-dashed border-border rounded-3xl">
+                    <div className="w-12 h-12 bg-pageBg rounded-full flex items-center justify-center mb-4 text-xl">
+                      <span className="text-textMuted">📅</span>
                     </div>
-                    <p className="text-[#a0a0ab] text-sm font-medium">
+                    <p className="text-textMuted text-sm font-medium">
                       No events scheduled for this date.
                     </p>
                     {selectedDate !== todayStr && (
@@ -318,7 +335,7 @@ const OrganiserPage = () => {
             <div className="flex items-center justify-between mb-6">
               <button
                 onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1e1e22] border border-themeBorder text-textMuted hover:border-[#a3e635] hover:text-main transition-all"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-pageBg border border-border text-textMuted hover:border-[#a3e635] hover:text-main transition-all"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -327,7 +344,7 @@ const OrganiserPage = () => {
               </span>
               <button
                 onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1e1e22] border border-themeBorder text-textMuted hover:border-[#a3e635] hover:text-main transition-all"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-pageBg border border-border text-textMuted hover:border-[#a3e635] hover:text-main transition-all"
               >
                 <ChevronRight size={16} />
               </button>
@@ -335,7 +352,7 @@ const OrganiserPage = () => {
 
             <div className="grid grid-cols-7 gap-1 text-center mb-2">
               {DAYS.map((d) => (
-                <div key={d} className="text-[10px] font-semibold text-[#3a3a42] py-1">
+                <div key={d} className="text-[10px] font-semibold text-textMuted py-1">
                   {d}
                 </div>
               ))}
@@ -362,7 +379,7 @@ const OrganiserPage = () => {
                         ? "bg-themeAccent text-[#0c0c0f] font-bold"
                         : isToday
                         ? "bg-themeAccent/20 text-themeAccent ring-1 ring-themeAccent/40"
-                        : "text-[#c0c0c8] hover:bg-[#1e1e22]"
+                        : "text-textMuted hover:bg-pageBg"
                     }`}
                   >
                     {day}
@@ -399,7 +416,7 @@ const EventCard = ({ event, isActive }) => {
       className={`flex items-center justify-between bg-cardBg px-6 py-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
         isActive
           ? "border-l-4 border-l-[#a3e635] border-t-[#1e1e22] border-r-[#1e1e22] border-b-[#1e1e22]"
-          : "border-border border-l-4 border-l-[#2a2a2e] hover:border-[#a3e635]/20"
+          : "border-border border-l-4 border-l-border hover:border-[#a3e635]/20"
       }`}
     >
       <div className="flex-1">
@@ -425,7 +442,7 @@ const EventCard = ({ event, isActive }) => {
         <p className="text-sm text-muted mb-2">📍 {event.venue}</p>
         {event.attendees > 0 && (
           <div className="flex items-center gap-3">
-            <div className="w-32 h-1.5 bg-[#1e1e22] rounded-full overflow-hidden">
+            <div className="w-32 h-1.5 bg-border rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full ${
                   pct >= 90 ? "bg-[#ef4444]" : pct >= 70 ? "bg-[#fb923c]" : "bg-themeAccent"

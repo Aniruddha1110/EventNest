@@ -1,0 +1,40 @@
+[33m7b674fa[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Modified all the folders and added them properly
+[33m0dda59a[m Modified all the folders and added them properly
+[33mc83bd54[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m added AOP, Services, Controllers.
+[33me89085f[m Added backend
+[33m045d039[m Changed the port id and login and signup page
+[33m92f972e[m Added OAuth2RedirectHandler component and changed the LoginPage.jsx
+[33md879d02[m Added LoginPage and Modify App.jsx
+[33mcf3fee8[m Chnaged the theme logic from react to Tailwind CSS and changed Admin page and added theme
+[33m04ee5d8[m Changed the whole logic of ThemeContext from React to TailwindCSS, Changed the whole Admin UI and added the theme button to it
+[33mf72f983[m Added CreateEventPage and modified mockData, OrganiserPage, UserPage and App.jsx for more betterment.
+[33mfd69274[m Updated the Signup page and added necessary features
+[33mc87ecb3[m Updated the chnages in Landing.jsx and RoleSelect.jsx
+[33m93ddcb0[m Updated duplicate import  from App.jsx
+[33m0a2b5bf[m Minor update in App.jsx
+[33m3c9352f[m Merge branch 'main' of https://github.com/Aniruddha1110/EventNest
+[33ma05ec08[m Role Selection and Signup pages are made and implemented, and routed them
+[33meb111e8[m added updated package-lock.json
+[33m61235f8[m Added eventsphere-backend folder along with all the dependencies and folders needed for backend creation and working also added the entities, repos and dto classes all. Plus in frontend added the CompletedEventsPage and update the App.jsx
+[33m295f31b[m Added the role selecting page for sign up
+[33maa40f5d[m Added the logic of theme button for changing between light theme to dark theme
+[33md02a815[m Changed the whole theme and UI and added new feratures
+[33mdb05ad7[m Changed the whole theme and UI and added new feratures
+[33m99741f3[m Changed the common layout of user profile and organiser profile
+[33mb8baad6[m Changed the whole theme and UI and added new feratures
+[33m2240213[m Changed the whole theme and UI and added new feratures
+[33m84ce44f[m Resolved the conflict in App.jsx
+[33m1b9da88[m Changed the whole UI and added extra feature
+[33m70aa9fb[m Added EventsPage, EventsDetailPage, OngoingEventsPage, UpcomingEventsPage, TicketPage, PaymentPage, mockData (For temporary data until backend is not created and properly connected) and Update the App with proper routes.
+[33m47d42eb[m Added the final working admin page.
+[33mf69ae18[m Added the updated vulnerabilities free package-lock.json
+[33mf546849[m Add UserProfilePage, Add OrganiserProfilePage, new organiser features addeed, ForgetPassword feature corrected
+[33m6cfc972[m Changed the heading of UserPage
+[33m7d3e53e[m Added the AdminPage, UserPage, OrganiserPage with changes in Calendar layout and function naming
+[33m4a83ac4[m Modified App.jsx
+[33m7765ee7[m Merge completed
+[33md3d04ee[m Aniruddha added AdminPage
+[33ma5fdee3[m Modified OrganiserPage, main.jsx, app.jsx
+[33m1599974[m Ishaan Added new requirements, Organiser page and updated the App.jsx
+[33m7103cdf[m Added the frontend
+[33mbb81d71[m Initial commit

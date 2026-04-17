@@ -1,0 +1,26 @@
+# EventSphere Face Recognition Service — Python dependencies
+#
+# INSTALLATION ORDER MATTERS on Windows:
+#   1. Install cmake first:         pip install cmake
+#   2. Install dlib:                pip install dlib
+#   3. Install face_recognition:    pip install face-recognition
+#   4. Install the rest:            pip install -r requirements_face.txt
+#
+# Why the manual order?
+#   face_recognition depends on dlib which requires cmake to compile C++ code.
+#   On Windows, pip sometimes fails to resolve this automatically.
+#   Installing them separately in order prevents build errors.
+#
+# If dlib installation fails:
+#   Download the pre-built dlib wheel from:
+#   https://github.com/z-mahmud22/Dlib_Windows_Python3.x
+#   Then: pip install dlib-<version>-cpXX-cpXX-win_amd64.whl
+#   Then continue with: pip install face-recognition flask pillow numpy
+
+cmake==3.31.6
+dlib==19.24.6
+face-recognition==1.3.0
+face-recognition-models==0.3.0
+flask==3.0.3
+numpy==1.26.4
+Pillow==10.4.0

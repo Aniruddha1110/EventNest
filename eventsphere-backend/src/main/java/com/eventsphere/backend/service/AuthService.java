@@ -27,6 +27,19 @@ import org.springframework.transaction.annotation.Transactional;
  *   SHA-256 + UTF-8 + no salt → 64-char lowercase hex
  *   PasswordUtil.hash() and PasswordUtil.matches() implement this.
  *   NEVER change this algorithm — it breaks every stored password.
+ *
+ * ── Admin login is now TWO phases ─────────────────────────────────────────────
+ *
+ * Phase 1 — loginAdmin() (this file):
+ *   Verifies username/password against Oracle ADMINS table.
+ *   On success: returns AuthResponse with tempToken + facePending=true.
+ *   NO real JWT is issued yet.
+ *
+ * Phase 2 — FaceAuthService (separate service):
+ *   Receives tempToken + webcam image from frontend.
+ *   Verifies face against ADMIN_BIOMETRIC BLOB from Oracle.
+ *   On success: issues real JWT with role="admin".
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 @Service
 @RequiredArgsConstructor
@@ -47,6 +60,9 @@ public class AuthService {
      * Handles login for all three roles (user / organiser / admin).
      * loginMode = "username" → find by username
      * loginMode = "email"    → find by email
+     *
+     * Admin login returns facePending=true + tempToken (NOT a real JWT).
+     * User/Organiser login returns the real JWT as before.
      */
     public AuthResponse login(LoginRequest req) {
         String role      = req.getRole().toLowerCase();
@@ -79,6 +95,7 @@ public class AuthService {
                 .userId(user.getUserId())
                 .name(user.getUserFirstName() + " " + user.getUserLastName())
                 .email(user.getUserEmail())
+                .facePending(false)
                 .build();
     }
 
@@ -99,9 +116,18 @@ public class AuthService {
                 .userId(org.getOrganiserId())
                 .name(org.getOrganiserName())
                 .email(org.getOrganiserEmail())
+                .facePending(false)
                 .build();
     }
 
+    /**
+     * Admin Phase 1 — password verification only.
+     *
+     * Returns a TEMP token (role=admin_pending, TTL=3min) + facePending=true.
+     * The frontend must navigate to /face-auth and complete Phase 2.
+     * NO real JWT is issued here — the admin cannot access any protected
+     * route until face recognition passes.
+     */
     private AuthResponse loginAdmin(String mode, String id, String plainPass) {
         Admin admin = "email".equals(mode)
                 ? adminRepository.findByAdminEmailIgnoreCase(id)
@@ -112,15 +138,22 @@ public class AuthService {
         if (!PasswordUtil.matches(plainPass, admin.getAdminPassword())) {
             throw new InvalidCredentialsException("Incorrect password.");
         }
-        String token    = jwtUtil.generateToken(admin.getAdminId(), "admin");
-        String photoUrl = "/photos/" + admin.getAdminFirstName() + ".jpg";
-        log.info("Admin login: adminId={}", admin.getAdminId());
+
+        // Phase 1 passed — issue TEMP token only
+        String tempToken = jwtUtil.generateTempToken(admin.getAdminId());
+        String photoUrl  = "/photos/" + admin.getAdminFirstName() + ".jpg";
+
+        log.info("Admin Phase 1 passed: adminId={} — awaiting face verification.", admin.getAdminId());
+
         return AuthResponse.builder()
-                .token(token).role("admin")
+                .token(null)              // No real JWT yet
+                .tempToken(tempToken)     // Short-lived, face_pending=true
+                .role("admin_pending")
                 .userId(admin.getAdminId())
                 .name(admin.getAdminFirstName() + " " + admin.getAdminLastName())
                 .email(admin.getAdminEmail())
                 .photoUrl(photoUrl)
+                .facePending(true)        // Frontend checks this flag
                 .build();
     }
 
@@ -143,7 +176,6 @@ public class AuthService {
                 .build();
 
         User saved = userRepository.save(user);
-        // Triggers H2 bank account creation via DataLoader
         eventPublisher.publishEvent(new UserRegisteredEvent(this, saved));
 
         String token = jwtUtil.generateToken(saved.getUserId(), "user");
@@ -153,6 +185,7 @@ public class AuthService {
                 .userId(saved.getUserId())
                 .name(saved.getUserFirstName() + " " + saved.getUserLastName())
                 .email(saved.getUserEmail())
+                .facePending(false)
                 .build();
     }
 
@@ -175,7 +208,6 @@ public class AuthService {
 
         organiserRepository.save(org);
         log.info("Organiser registered: username={}", req.getUsername());
-        // No JWT returned — admin must approve before login is possible
     }
 
     // ── Forgot Password → send OTP ────────────────────────────────────────────
@@ -199,7 +231,6 @@ public class AuthService {
 
     @Transactional("oracleTransactionManager")
     public void resetPassword(ResetPasswordRequest req) {
-        // Re-verify OTP one final time as guard against direct API calls
         if (!otpService.verify(req.getEmail(), req.getOtp())) {
             throw new InvalidCredentialsException("OTP is incorrect or has expired.");
         }
@@ -232,6 +263,14 @@ public class AuthService {
         log.info("Password reset for email={}, role={}", req.getEmail(), req.getRole());
     }
 
+    // ── Send signup OTP ───────────────────────────────────────────────────────
+
+    public void sendSignupOtp(ForgotPasswordRequest req) {
+        String otp = otpService.generateAndStore(req.getEmail());
+        mailService.sendOtp(req.getEmail(), otp);
+        log.info("Signup OTP sent to email={}", req.getEmail());
+    }
+
     // ── Private helper ────────────────────────────────────────────────────────
 
     private void verifyEmailExists(String email, String role) {
@@ -244,12 +283,5 @@ public class AuthService {
         if (!exists) {
             throw new ResourceNotFoundException("No " + role + " account found with email: " + email);
         }
-    }
-    // ── Send OTP for new signup (email not yet registered) ────────────────────
-
-    public void sendSignupOtp(ForgotPasswordRequest req) {
-        String otp = otpService.generateAndStore(req.getEmail());
-        mailService.sendOtp(req.getEmail(), otp);
-        log.info("Signup OTP sent to email={}", req.getEmail());
     }
 }

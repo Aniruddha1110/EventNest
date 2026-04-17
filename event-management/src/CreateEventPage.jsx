@@ -1,11 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Plus, Trash2, Check, AlertCircle, Calendar, Clock, FileText, MapPin } from "lucide-react";
+import {
+    ChevronLeft, Plus, Trash2, Check, AlertCircle,
+    Calendar, Clock, FileText, MapPin, Sparkles, Loader2
+} from "lucide-react";
 import { ThemeToggle } from "./ThemeContext";
 
 const API = "http://localhost:9090";
 
-// ─── MOCK VENUES (replace with GET /api/venues when backend ready) ────────────
+// ─── MOCK VENUES (replace with GET /api/venues when backend ready) ─────────────
 const MOCK_VENUES = [
     { venueId: "V-0001", venueName: "Auditorium-1", venueCapacity: 5000 },
     { venueId: "V-0002", venueName: "Cricket Stadium", venueCapacity: 10000 },
@@ -19,23 +22,34 @@ const MOCK_VENUES = [
     { venueId: "V-0010", venueName: "Campus-6 OAT", venueCapacity: 800 },
 ];
 
-// ─── MOCK LOGGED-IN ORGANISER (replace with auth context when ready) ──────────
-// Backend: GET /api/organisers/profile (JWT from localStorage)
 const MOCK_ORGANISER = {
     organiserId: "O-0001",
     organiserName: "KIIT University",
     organiserEmail: "kiit@kiit.in",
 };
 
-// ─── Empty programme template ────────────────────────────────────────────────
+// ─── Programme categories — matches EventMetadata.category taxonomy ────────────
+const PROGRAMME_CATEGORIES = [
+    { value: "Cultural", label: "🎭 Cultural", hint: "Dance, music, fest, drama" },
+    { value: "Technical", label: "💻 Technical", hint: "Hackathon, coding, robotics" },
+    { value: "Sports", label: "⚽ Sports", hint: "Cricket, athletics, tennis" },
+    { value: "Ceremony", label: "🎖 Ceremony", hint: "Republic Day, Puja, parade" },
+    { value: "Food", label: "🍱 Food", hint: "Carnivals, food festivals" },
+];
+
+// ─── Empty programme template ──────────────────────────────────────────────────
 const emptyProgramme = () => ({
     _key: Date.now() + Math.random(),
     name: "",
     description: "",
     venueId: "",
+    category: "",          // NEW — drives venue suggestion
+    suggestions: null,     // { suggestions: [...], message: "" } | null
+    suggestLoading: false, // per-programme loading state
+    suggestError: null,    // per-programme error string
 });
 
-// ─── Field wrapper ─────────────────────────────────────────────────────────────
+// ─── Field wrapper ──────────────────────────────────────────────────────────────
 const Field = ({ label, required, error, children, hint }) => (
     <div>
         <label className="block text-xs font-semibold text-[#5a5a62] uppercase tracking-wider mb-2">
@@ -51,48 +65,103 @@ const Field = ({ label, required, error, children, hint }) => (
     </div>
 );
 
-// ─── Input styles ─────────────────────────────────────────────────────────────
 const inputCls = (err) =>
     `w-full bg-pageBg border ${err ? "border-[#ef4444]" : "border-border"} rounded-xl px-4 py-3 text-sm text-main outline-none focus:border-[#a3e635] transition-colors placeholder-[#3a3a42]`;
 
 const selectCls = (err) =>
     `w-full bg-pageBg border ${err ? "border-[#ef4444]" : "border-border"} rounded-xl px-4 py-3 text-sm text-main outline-none focus:border-[#a3e635] transition-colors`;
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Score bar component ────────────────────────────────────────────────────────
+const ScoreBar = ({ score }) => {
+    const pct = Math.round(score * 100);
+    const color = pct >= 75 ? "#a3e635" : pct >= 55 ? "#fb923c" : "#6366f1";
+    return (
+        <div className="flex items-center gap-2 mt-1">
+            <div className="flex-1 h-1.5 bg-[#2a2a2e] rounded-full overflow-hidden">
+                <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${pct}%`, backgroundColor: color }}
+                />
+            </div>
+            <span className="text-[10px] font-bold" style={{ color }}>{pct}%</span>
+        </div>
+    );
+};
+
+// ─── Venue Suggestion Card ──────────────────────────────────────────────────────
+const VenueSuggestionCard = ({ suggestions, message, onSelect }) => {
+    if (!suggestions || suggestions.length === 0) return null;
+    const rankLabels = ["🥇 Best Match", "🥈 Good Fit", "🥉 Alternative"];
+
+    return (
+        <div className="mt-3 bg-[#0e1a05] border border-[#a3e635]/25 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+                <Sparkles size={13} className="text-[#a3e635]" />
+                <span className="text-[11px] font-bold text-[#a3e635] uppercase tracking-wider">
+                    AI Suggestions
+                </span>
+                <span className="text-[10px] text-[#5a5a62] ml-auto">{message}</span>
+            </div>
+            <div className="space-y-2">
+                {suggestions.map((s, i) => (
+                    <button
+                        key={s.venueId}
+                        type="button"
+                        onClick={() => onSelect(s.venueId)}
+                        className="w-full flex items-center gap-3 bg-[#111115] border border-[#2a2a2e]
+                                   hover:border-[#a3e635]/50 hover:bg-[#1a2c0a] rounded-xl px-3 py-2.5
+                                   transition-all group text-left"
+                    >
+                        <span className="text-base shrink-0">{rankLabels[i]?.split(" ")[0]}</span>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-main group-hover:text-[#a3e635] transition-colors truncate">
+                                {s.venueName}
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-[#5a5a62]">
+                                    Cap: {s.venueCapacity.toLocaleString()}
+                                </span>
+                                <ScoreBar score={s.suitabilityScore} />
+                            </div>
+                        </div>
+                        <span className="text-[9px] text-[#5a5a62] group-hover:text-[#a3e635]
+                                         transition-colors shrink-0 font-semibold">
+                            Select →
+                        </span>
+                    </button>
+                ))}
+            </div>
+            <p className="text-[9px] text-[#3a3a42] mt-2 text-center">
+                Click a suggestion to auto-fill the venue dropdown
+            </p>
+        </div>
+    );
+};
+
+// ─── Main Component ─────────────────────────────────────────────────────────────
 const CreateEventPage = () => {
     const navigate = useNavigate();
-
-    // ── Organiser info (fetched from backend, not filled by user) ────────────────
     const [organiser, setOrganiser] = useState(MOCK_ORGANISER);
-
-    // ── Venues list ──────────────────────────────────────────────────────────────
     const [venues, setVenues] = useState([]);
-
-    // ── Form state ────────────────────────────────────────────────────────────────
     const [form, setForm] = useState({
-    eventName: "",
-    eventStartDate: "",
-    eventEndDate: "",
-    eventTime: "",
-    eventDuration: "",
-    eventDescription: "",
-    eventType: "Free",   // "Free" | "Paid"
-});
-
-    // ── Programmes list ───────────────────────────────────────────────────────────
+        eventName: "",
+        eventStartDate: "",
+        eventEndDate: "",
+        eventTime: "",
+        eventDuration: "",
+        eventDescription: "",
+        eventType: "Free",
+    });
     const [programmes, setProgrammes] = useState([emptyProgramme()]);
-
-    // ── UI state ──────────────────────────────────────────────────────────────────
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [submitted, setSubmitted] = useState(false);
-    const [step, setStep] = useState(1); // 1 = event details, 2 = programmes
+    const [step, setStep] = useState(1);
 
-    // ── Fetch organiser profile + venues on mount ─────────────────────────────────
+    // ── Fetch organiser + venues on mount ───────────────────────────────────────
     useEffect(() => {
         const token = localStorage.getItem("token");
 
-        // GET /api/organisers/profile — autofills organiser info
         fetch(`${API}/api/organisers/profile`, {
             headers: { Authorization: `Bearer ${token}` }
         })
@@ -101,15 +170,14 @@ const CreateEventPage = () => {
                 const raw = d.data || d;
                 if (raw) setOrganiser({
                     ...raw,
-                    id:    raw.id    || raw.organiserId,
-                    name:  raw.name  || raw.organiserName  || "",
-                    email: raw.email || raw.organiserEmail  || "",
-                    phone: raw.phone || raw.organiserPhone  || "",
+                    id: raw.id || raw.organiserId,
+                    name: raw.name || raw.organiserName || "",
+                    email: raw.email || raw.organiserEmail || "",
+                    phone: raw.phone || raw.organiserPhone || "",
                 });
             })
             .catch(() => setOrganiser(MOCK_ORGANISER));
 
-        // GET /api/admin/venues — loads available venues for programme dropdowns
         fetch(`${API}/api/admin/venues`, {
             headers: { Authorization: `Bearer ${token}` }
         })
@@ -118,25 +186,85 @@ const CreateEventPage = () => {
                 const list = Array.isArray(d) ? d : (d.data || []);
                 setVenues(list.length ? list.map(v => ({
                     ...v,
-                    id:   v.id   || v.venueId,
+                    id: v.id || v.venueId,
                     name: v.name || v.venueName,
                 })) : MOCK_VENUES);
             })
             .catch(() => setVenues(MOCK_VENUES));
     }, []);
 
-    // ── Form field change ─────────────────────────────────────────────────────────
+    // ── Venue suggestion fetcher ────────────────────────────────────────────────
+    const fetchSuggestions = useCallback(async (category, progIdx) => {
+        if (!category || !form.eventStartDate || !form.eventDuration) return;
+
+        // Mark loading
+        setProgrammes(prev => prev.map((p, i) =>
+            i === progIdx ? { ...p, suggestLoading: true, suggestError: null, suggestions: null } : p
+        ));
+
+        try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(`${API}/api/venues/suggest`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    category,
+                    eventType: form.eventType,
+                    eventStartDate: form.eventStartDate,
+                    durationHours: Number(form.eventDuration),
+                }),
+            });
+
+            if (!res.ok) throw new Error("Suggestion service error");
+            const data = await res.json();
+            const payload = data.data || data;
+
+            setProgrammes(prev => prev.map((p, i) =>
+                i === progIdx
+                    ? { ...p, suggestLoading: false, suggestions: payload }
+                    : p
+            ));
+        } catch {
+            // Graceful fallback — don't break the form
+            setProgrammes(prev => prev.map((p, i) =>
+                i === progIdx
+                    ? { ...p, suggestLoading: false, suggestError: "Suggestions unavailable right now." }
+                    : p
+            ));
+        }
+    }, [form.eventStartDate, form.eventDuration, form.eventType]);
+
+    // ── Form field change ───────────────────────────────────────────────────────
     const setField = (key) => (e) => {
         setForm(p => ({ ...p, [key]: e.target.value }));
         setErrors(p => ({ ...p, [key]: "" }));
     };
 
-    // ── Programme change ──────────────────────────────────────────────────────────
+    // ── Programme change ────────────────────────────────────────────────────────
     const setProg = (key, val, idx) => {
         setProgrammes(prev =>
             prev.map((p, i) => i === idx ? { ...p, [key]: val } : p)
         );
         setErrors(p => ({ ...p, [`prog_${idx}_${key}`]: "" }));
+    };
+
+    // ── Category change → auto-trigger suggestion ───────────────────────────────
+    const handleCategoryChange = (category, idx) => {
+        setProg("category", category, idx);
+        // Clear old suggestions before fetching new
+        setProgrammes(prev => prev.map((p, i) =>
+            i === idx ? { ...p, category, suggestions: null, suggestError: null } : p
+        ));
+        fetchSuggestions(category, idx);
+    };
+
+    // ── Apply suggestion → auto-fill venue dropdown ─────────────────────────────
+    const applySuggestion = (venueId, idx) => {
+        setProg("venueId", venueId, idx);
+        setErrors(p => ({ ...p, [`prog_${idx}_venueId`]: "" }));
     };
 
     const addProgramme = () => {
@@ -149,7 +277,7 @@ const CreateEventPage = () => {
         setProgrammes(prev => prev.filter((_, i) => i !== idx));
     };
 
-    // ── Validation ────────────────────────────────────────────────────────────────
+    // ── Validation ──────────────────────────────────────────────────────────────
     const validateStep1 = () => {
         const e = {};
         if (!form.eventName.trim()) e.eventName = "Event name is required.";
@@ -182,13 +310,12 @@ const CreateEventPage = () => {
         if (validateStep1()) setStep(2);
     };
 
-    // ── Submit ────────────────────────────────────────────────────────────────────
+    // ── Submit ──────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
         if (!validateStep2()) return;
         setLoading(true);
 
         const payload = {
-            // Event fields
             eventName: form.eventName.trim(),
             eventStartDate: form.eventStartDate,
             eventEndDate: form.eventEndDate,
@@ -197,25 +324,16 @@ const CreateEventPage = () => {
             eventDescription: form.eventDescription.trim(),
             eventStatus: "upcoming",
             eventType: form.eventType,
-
-            // Organiser auto-filled from JWT/profile — not typed by user
             organiserId: organiser.organiserId,
-
-            // Programmes
             programmes: programmes.map(p => ({
                 programmeName: p.name.trim(),
                 programmeDescription: p.description.trim(),
                 venueId: p.venueId,
-                // organiserId comes from the event's organiser — same person
-                programmeStatus: "pending",  // admin must approve
+                programmeStatus: "pending",
             })),
         };
 
         try {
-            // POST /api/organisers/events
-            // Backend creates the event + all programmes in one transaction.
-            // All programmes start with status = 'pending' — admin must approve.
-            // Returns: ApiResponse { success, message, data: EventResponse }
             const res = await fetch(`${API}/api/organisers/events`, {
                 method: "POST",
                 headers: {
@@ -231,17 +349,15 @@ const CreateEventPage = () => {
                 setLoading(false);
                 return;
             }
-
             setSubmitted(true);
         } catch {
-            // Dev fallback — simulate success
             setSubmitted(true);
         } finally {
             setLoading(false);
         }
     };
 
-    // ── Success screen ─────────────────────────────────────────────────────────────
+    // ── Success screen ──────────────────────────────────────────────────────────
     if (submitted) {
         return (
             <div className="min-h-screen bg-pageBg flex items-center justify-center px-6 font-sans">
@@ -265,7 +381,12 @@ const CreateEventPage = () => {
                             Back to Dashboard
                         </button>
                         <button
-                            onClick={() => { setSubmitted(false); setStep(1); setForm({ eventName: "", eventStartDate: "", eventEndDate: "", eventTime: "", eventDuration: "", eventDescription: "", eventType: "Free" }); setProgrammes([emptyProgramme()]); setErrors({}); }}
+                            onClick={() => {
+                                setSubmitted(false); setStep(1);
+                                setForm({ eventName: "", eventStartDate: "", eventEndDate: "", eventTime: "", eventDuration: "", eventDescription: "", eventType: "Free" });
+                                setProgrammes([emptyProgramme()]);
+                                setErrors({});
+                            }}
                             className="w-full py-3 border border-[#2a2a2e] text-[#a0a0ab] font-semibold text-sm rounded-xl hover:border-[#a3e635] hover:text-[#a3e635] transition-all"
                         >
                             Create Another Event
@@ -276,17 +397,16 @@ const CreateEventPage = () => {
         );
     }
 
-    // ── Venue lookup helper ───────────────────────────────────────────────────────
     const getVenueName = (vid) => {
         const v = venues.find(x => x.venueId === vid);
         return v ? v.venueName : "";
     };
 
-    // ── Render ────────────────────────────────────────────────────────────────────
+    // ── Render ──────────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg-pageBg text-main font-sans">
 
-            {/* ── HEADER ─────────────────────────────────────────────────────────── */}
+            {/* HEADER */}
             <header className="sticky top-0 z-50 flex justify-between items-center px-8 h-16 bg-pageBg/90 backdrop-blur-md border-b border-border">
                 <button
                     onClick={() => step === 2 ? setStep(1) : navigate("/organiser")}
@@ -295,28 +415,24 @@ const CreateEventPage = () => {
                     <ChevronLeft size={18} />
                     <span className="text-sm font-medium">{step === 2 ? "Back to Event Details" : "Back to Dashboard"}</span>
                 </button>
-
                 <span className="font-bold text-xl tracking-tight">
                     Event<span className="text-[#a3e635]">Sphere</span>
                 </span>
                 <div className="flex items-center gap-4">
-                <ThemeToggle />
-                {/* Step indicator */}
+                    <ThemeToggle />
                     <div className="flex items-center gap-2">
                         <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${step === 1 ? "bg-[#a3e635] text-[#0c0c0f]" : "bg-[#1e1e22] text-[#a3e635] border border-[#a3e635]"}`}>
                             {step > 1 ? <Check size={14} /> : "1"}
                         </div>
                         <div className="w-8 h-px bg-[#1e1e22]" />
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${step === 2 ? "bg-[#a3e635] text-[#0c0c0f]" : "bg-[#1e1e22] text-[#5a5a62]"}`}>
-                            2
-                        </div>
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${step === 2 ? "bg-[#a3e635] text-[#0c0c0f]" : "bg-[#1e1e22] text-[#5a5a62]"}`}>2</div>
                     </div>
                 </div>
             </header>
 
             <div className="max-w-2xl mx-auto px-6 py-10">
 
-                {/* ── ORGANISER INFO CARD (auto-fetched, read only) ──────────────────── */}
+                {/* ORGANISER INFO CARD */}
                 <div className="bg-[#111115] border border-border rounded-2xl px-6 py-4 mb-8 flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-[#a3e635]/10 border border-[#a3e635]/30 flex items-center justify-center text-[#a3e635] font-bold text-sm shrink-0">
                         {organiser.organiserName?.charAt(0) || "O"}
@@ -333,9 +449,7 @@ const CreateEventPage = () => {
                     </div>
                 </div>
 
-                {/* ════════════════════════════════════════════════════════════════════ */}
-                {/* STEP 1 — EVENT DETAILS                                              */}
-                {/* ════════════════════════════════════════════════════════════════════ */}
+                {/* ════════════ STEP 1 — EVENT DETAILS ════════════ */}
                 {step === 1 && (
                     <div>
                         <div className="mb-8">
@@ -343,110 +457,71 @@ const CreateEventPage = () => {
                             <h1 className="text-2xl font-extrabold text-main">Event Details</h1>
                             <p className="text-[#5a5a62] text-sm mt-1">Fill in the core information for your event.</p>
                         </div>
-
                         <div className="space-y-5">
 
-                            {/* Event Name */}
                             <Field label="Event Name" required error={errors.eventName}>
-                                <input
-                                    type="text"
-                                    value={form.eventName}
-                                    onChange={setField("eventName")}
-                                    placeholder="e.g. KIIT Fest 2026"
-                                    maxLength={50}
-                                    className={inputCls(errors.eventName)}
-                                />
+                                <input type="text" value={form.eventName} onChange={setField("eventName")}
+                                    placeholder="e.g. KIIT Fest 2026" maxLength={50} className={inputCls(errors.eventName)} />
                                 <p className="text-[10px] text-textMuted mt-1 text-right">{form.eventName.length}/50</p>
                             </Field>
 
-                            {/* Dates */}
                             <div className="grid grid-cols-2 gap-4">
                                 <Field label="Start Date" required error={errors.eventStartDate}>
                                     <div className="relative">
                                         <Calendar size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5a5a62]" />
-                                        <input
-                                            type="date"
-                                            value={form.eventStartDate}
-                                            onChange={setField("eventStartDate")}
+                                        <input type="date" value={form.eventStartDate} onChange={setField("eventStartDate")}
                                             min={new Date().toISOString().split("T")[0]}
-                                            className={`${inputCls(errors.eventStartDate)} pl-9`}
-                                        />
+                                            className={`${inputCls(errors.eventStartDate)} pl-9`} />
                                     </div>
                                 </Field>
                                 <Field label="End Date" required error={errors.eventEndDate}>
                                     <div className="relative">
                                         <Calendar size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5a5a62]" />
-                                        <input
-                                            type="date"
-                                            value={form.eventEndDate}
-                                            onChange={setField("eventEndDate")}
+                                        <input type="date" value={form.eventEndDate} onChange={setField("eventEndDate")}
                                             min={form.eventStartDate || new Date().toISOString().split("T")[0]}
-                                            className={`${inputCls(errors.eventEndDate)} pl-9`}
-                                        />
+                                            className={`${inputCls(errors.eventEndDate)} pl-9`} />
                                     </div>
                                 </Field>
                             </div>
 
-                            {/* Time + Duration */}
                             <div className="grid grid-cols-2 gap-4">
                                 <Field label="Event Time" required error={errors.eventTime}>
                                     <div className="relative">
                                         <Clock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5a5a62]" />
-                                        <input
-                                            type="time"
-                                            value={form.eventTime}
-                                            onChange={setField("eventTime")}
-                                            className={`${inputCls(errors.eventTime)} pl-9`}
-                                        />
+                                        <input type="time" value={form.eventTime} onChange={setField("eventTime")}
+                                            className={`${inputCls(errors.eventTime)} pl-9`} />
                                     </div>
                                 </Field>
                                 <Field label="Duration (hours)" required error={errors.eventDuration}
                                     hint="Total duration of the full event in hours">
-                                    <input
-                                        type="number"
-                                        value={form.eventDuration}
-                                        onChange={setField("eventDuration")}
-                                        placeholder="e.g. 8"
-                                        min={1}
-                                        max={720}
-                                        className={inputCls(errors.eventDuration)}
-                                    />
+                                    <input type="number" value={form.eventDuration} onChange={setField("eventDuration")}
+                                        placeholder="e.g. 8" min={1} max={720} className={inputCls(errors.eventDuration)} />
                                 </Field>
                             </div>
 
-                            {/* Description */}
                             <Field label="Event Description" error={errors.eventDescription}
                                 hint="Tell attendees what this event is about (max 500 characters)">
                                 <div className="relative">
                                     <FileText size={15} className="absolute left-3 top-3.5 text-[#5a5a62]" />
-                                    <textarea
-                                        value={form.eventDescription}
-                                        onChange={setField("eventDescription")}
+                                    <textarea value={form.eventDescription} onChange={setField("eventDescription")}
                                         placeholder="Describe your event — what's it about, who should attend, what to expect..."
-                                        rows={4}
-                                        maxLength={500}
-                                        className={`${inputCls(errors.eventDescription)} pl-9 resize-none`}
-                                    />
+                                        rows={4} maxLength={500}
+                                        className={`${inputCls(errors.eventDescription)} pl-9 resize-none`} />
                                 </div>
                                 <p className="text-[10px] text-textMuted mt-1 text-right">{form.eventDescription.length}/500</p>
                             </Field>
 
-                            {/* Event Type */}
                             <Field label="Ticket Type" required hint="Will attendees need to buy tickets?">
                                 <div className="grid grid-cols-2 gap-3">
                                     {["Free", "Paid"].map(type => (
-                                        <button
-                                            key={type}
-                                            type="button"
+                                        <button key={type} type="button"
                                             onClick={() => { setForm(p => ({ ...p, eventType: type })); setErrors(p => ({ ...p, eventType: "" })); }}
-                                            className={`py-3 rounded-xl text-sm font-bold border-2 transition-all ${
-                                                form.eventType === type
+                                            className={`py-3 rounded-xl text-sm font-bold border-2 transition-all ${form.eventType === type
                                                     ? type === "Free"
                                                         ? "bg-[#a3e635]/10 border-[#a3e635] text-[#a3e635]"
                                                         : "bg-[#fb923c]/10 border-[#fb923c] text-[#fb923c]"
                                                     : "bg-pageBg border-border text-[#5a5a62] hover:border-[#3a3a42]"
-                                            }`}
-                                        >
+                                                }`}>
                                             {type === "Free" ? "🎟 Free Entry" : "💳 Paid Event"}
                                         </button>
                                     ))}
@@ -458,7 +533,6 @@ const CreateEventPage = () => {
                                 )}
                             </Field>
 
-                            {/* Info box */}
                             <div className="bg-[#1a2c0a] border border-[#a3e635]/20 rounded-xl px-4 py-3 text-xs text-[#a3e635] leading-relaxed">
                                 <p className="font-bold mb-1">ℹ What happens next?</p>
                                 <p className="text-[#6a8a3a]">
@@ -468,19 +542,15 @@ const CreateEventPage = () => {
                                 </p>
                             </div>
 
-                            <button
-                                onClick={handleNext}
-                                className="w-full py-4 bg-[#a3e635] text-[#0c0c0f] font-extrabold text-sm rounded-xl hover:bg-[#b8f056] transition-all active:scale-[0.98]"
-                            >
+                            <button onClick={handleNext}
+                                className="w-full py-4 bg-[#a3e635] text-[#0c0c0f] font-extrabold text-sm rounded-xl hover:bg-[#b8f056] transition-all active:scale-[0.98]">
                                 Continue to Programmes →
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* ════════════════════════════════════════════════════════════════════ */}
-                {/* STEP 2 — PROGRAMMES                                                 */}
-                {/* ════════════════════════════════════════════════════════════════════ */}
+                {/* ════════════ STEP 2 — PROGRAMMES ════════════ */}
                 {step === 2 && (
                     <div>
                         <div className="mb-8">
@@ -499,11 +569,19 @@ const CreateEventPage = () => {
                             <span className="text-[#a0a0ab] font-semibold">{form.eventName}</span>
                         </div>
 
+                        {/* AI tip banner */}
+                        <div className="bg-[#0e1a05] border border-[#a3e635]/20 rounded-xl px-4 py-2.5 mb-6 flex items-center gap-2">
+                            <Sparkles size={13} className="text-[#a3e635] shrink-0" />
+                            <p className="text-[11px] text-[#6a8a3a]">
+                                <span className="text-[#a3e635] font-bold">AI Venue Assist</span> — Select a programme category
+                                to instantly get smart venue suggestions based on your event type, date, and duration.
+                            </p>
+                        </div>
+
                         {/* Programmes */}
                         <div className="space-y-5 mb-6">
                             {programmes.map((prog, idx) => (
                                 <div key={prog._key} className="bg-[#111115] border border-border rounded-2xl p-6">
-
                                     <div className="flex items-center justify-between mb-5">
                                         <div className="flex items-center gap-2">
                                             <div className="w-6 h-6 rounded-full bg-[#a3e635] text-[#0c0c0f] text-xs font-extrabold flex items-center justify-center">
@@ -512,10 +590,8 @@ const CreateEventPage = () => {
                                             <span className="font-bold text-main text-sm">Programme {idx + 1}</span>
                                         </div>
                                         {programmes.length > 1 && (
-                                            <button
-                                                onClick={() => removeProgramme(idx)}
-                                                className="flex items-center gap-1.5 text-xs text-[#5a5a62] hover:text-[#ef4444] transition-colors"
-                                            >
+                                            <button onClick={() => removeProgramme(idx)}
+                                                className="flex items-center gap-1.5 text-xs text-[#5a5a62] hover:text-[#ef4444] transition-colors">
                                                 <Trash2 size={13} /> Remove
                                             </button>
                                         )}
@@ -524,25 +600,57 @@ const CreateEventPage = () => {
                                     <div className="space-y-4">
                                         {/* Programme Name */}
                                         <Field label="Programme Name" required error={errors[`prog_${idx}_name`]}>
-                                            <input
-                                                type="text"
-                                                value={prog.name}
+                                            <input type="text" value={prog.name}
                                                 onChange={e => setProg("name", e.target.value, idx)}
                                                 placeholder="e.g. Cultural Night, DJ Night, Hackathon"
-                                                maxLength={50}
-                                                className={inputCls(errors[`prog_${idx}_name`])}
-                                            />
+                                                maxLength={50} className={inputCls(errors[`prog_${idx}_name`])} />
                                         </Field>
 
-                                        {/* Venue */}
+                                        {/* ── NEW: Programme Category ──────────────────────────── */}
+                                        <Field label="Programme Category"
+                                            hint="Select a category to get AI-powered venue suggestions">
+                                            <div className="grid grid-cols-5 gap-2">
+                                                {PROGRAMME_CATEGORIES.map(cat => (
+                                                    <button key={cat.value} type="button"
+                                                        onClick={() => handleCategoryChange(cat.value, idx)}
+                                                        title={cat.hint}
+                                                        className={`py-2 px-1 rounded-xl text-[11px] font-bold border-2 transition-all text-center ${prog.category === cat.value
+                                                                ? "bg-[#a3e635]/10 border-[#a3e635] text-[#a3e635]"
+                                                                : "bg-pageBg border-border text-[#5a5a62] hover:border-[#a3e635]/40"
+                                                            }`}>
+                                                        {cat.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </Field>
+
+                                        {/* ── AI Suggestions (auto-shown after category select) ─ */}
+                                        {prog.suggestLoading && (
+                                            <div className="flex items-center gap-2 py-3 text-[11px] text-[#5a5a62]">
+                                                <Loader2 size={13} className="animate-spin text-[#a3e635]" />
+                                                Fetching AI venue suggestions...
+                                            </div>
+                                        )}
+
+                                        {!prog.suggestLoading && prog.suggestions && (
+                                            <VenueSuggestionCard
+                                                suggestions={prog.suggestions.suggestions}
+                                                message={prog.suggestions.message}
+                                                onSelect={(venueId) => applySuggestion(venueId, idx)}
+                                            />
+                                        )}
+
+                                        {!prog.suggestLoading && prog.suggestError && (
+                                            <p className="text-[10px] text-[#5a5a62] italic">{prog.suggestError}</p>
+                                        )}
+
+                                        {/* Venue Dropdown */}
                                         <Field label="Venue" required error={errors[`prog_${idx}_venueId`]}>
                                             <div className="relative">
                                                 <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5a5a62]" />
-                                                <select
-                                                    value={prog.venueId}
+                                                <select value={prog.venueId}
                                                     onChange={e => setProg("venueId", e.target.value, idx)}
-                                                    className={`${selectCls(errors[`prog_${idx}_venueId`])} pl-9 appearance-none`}
-                                                >
+                                                    className={`${selectCls(errors[`prog_${idx}_venueId`])} pl-9 appearance-none`}>
                                                     <option value="">Select a venue</option>
                                                     {(venues.length > 0 ? venues : MOCK_VENUES).map(v => (
                                                         <option key={v.venueId} value={v.venueId}>
@@ -561,14 +669,11 @@ const CreateEventPage = () => {
 
                                         {/* Description */}
                                         <Field label="Programme Description" error={errors[`prog_${idx}_description`]}>
-                                            <textarea
-                                                value={prog.description}
+                                            <textarea value={prog.description}
                                                 onChange={e => setProg("description", e.target.value, idx)}
                                                 placeholder="Briefly describe this programme..."
-                                                rows={2}
-                                                maxLength={500}
-                                                className={`${inputCls(errors[`prog_${idx}_description`])} resize-none`}
-                                            />
+                                                rows={2} maxLength={500}
+                                                className={`${inputCls(errors[`prog_${idx}_description`])} resize-none`} />
                                             <p className="text-[10px] text-textMuted mt-1 text-right">{prog.description.length}/500</p>
                                         </Field>
                                     </div>
@@ -576,39 +681,28 @@ const CreateEventPage = () => {
                             ))}
                         </div>
 
-                        {/* Add programme button */}
                         {programmes.length < 10 && (
-                            <button
-                                onClick={addProgramme}
-                                className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-[#2a2a2e] rounded-xl text-[#5a5a62] hover:border-[#a3e635] hover:text-[#a3e635] transition-all text-sm font-semibold mb-6"
-                            >
+                            <button onClick={addProgramme}
+                                className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-[#2a2a2e] rounded-xl text-[#5a5a62] hover:border-[#a3e635] hover:text-[#a3e635] transition-all text-sm font-semibold mb-6">
                                 <Plus size={16} /> Add Another Programme
                             </button>
                         )}
 
-                        {/* Submit error */}
                         {errors.submit && (
                             <div className="flex items-center gap-2 bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-xl px-4 py-3 text-sm text-[#ef4444] mb-5">
                                 <AlertCircle size={14} className="shrink-0" /> {errors.submit}
                             </div>
                         )}
 
-                        {/* Approval notice */}
                         <div className="bg-[#1e1e22] border border-[#2a2a2e] rounded-xl px-4 py-3 text-xs text-[#5a5a62] leading-relaxed mb-6">
                             <p className="text-[#a0a0ab] font-semibold mb-0.5">Admin approval required</p>
                             All {programmes.length} programme{programmes.length > 1 ? "s" : ""} will be reviewed by an admin before going live.
                             You'll receive an email notification on approval or rejection.
                         </div>
 
-                        {/* Submit button */}
-                        <button
-                            onClick={handleSubmit}
-                            disabled={loading}
-                            className={`w-full py-4 font-extrabold text-sm rounded-xl transition-all active:scale-[0.98] ${loading
-                                    ? "bg-[#1e1e22] text-[#5a5a62] cursor-wait"
-                                    : "bg-[#a3e635] text-[#0c0c0f] hover:bg-[#b8f056]"
-                                }`}
-                        >
+                        <button onClick={handleSubmit} disabled={loading}
+                            className={`w-full py-4 font-extrabold text-sm rounded-xl transition-all active:scale-[0.98] ${loading ? "bg-[#1e1e22] text-[#5a5a62] cursor-wait" : "bg-[#a3e635] text-[#0c0c0f] hover:bg-[#b8f056]"
+                                }`}>
                             {loading ? "Submitting..." : `Submit Event for Review →`}
                         </button>
                     </div>
